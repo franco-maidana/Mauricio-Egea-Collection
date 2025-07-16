@@ -25,12 +25,6 @@ Server.use("/", indexRouter);
 Server.use(pathError);
 Server.use(errorHandler);
 
-// Middleware para errores generales
-Server.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: "Ocurrió un error en el servidor" });
-});
-
 const PORT = process.env.PORT || 8081;
 
 Server.listen(PORT, () => {
