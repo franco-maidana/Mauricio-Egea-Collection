@@ -59,3 +59,7 @@ export async function updateUser(id, data) {
 export async function deleteUser(id) {
   return userModel.deleteUser(id);
 }
+
+export async function findUserByEmailWithHash(email) {
+  return await userModel.getUserByEmail(email);
+}
