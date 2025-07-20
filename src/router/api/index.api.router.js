@@ -6,6 +6,7 @@ import talles from "./talles.api.router.js";
 import productos from "./productos.api.router.js";
 import stock from "./stock.api.router.js";
 import carrito from "./carrito.api.router.js";
+import provincias from "./provincias.api.router.js";
 
 const apiRouter = Router()
 
@@ -16,5 +17,6 @@ apiRouter.use('/talles', talles);
 apiRouter.use('/productos', productos);
 apiRouter.use('/stock', stock);
 apiRouter.use('/carrito', carrito);
+apiRouter.use('/provincias', provincias);
 
 export default apiRouter
