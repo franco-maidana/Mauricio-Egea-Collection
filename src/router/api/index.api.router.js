@@ -7,6 +7,8 @@ import productos from "./productos.api.router.js";
 import stock from "./stock.api.router.js";
 import carrito from "./carrito.api.router.js";
 import provincias from "./provincias.api.router.js";
+import DireccionEnvio from "./direccionEnvio.api.router.js";
+import checkout from "./checkout.api.router.js";
 
 const apiRouter = Router()
 
@@ -18,5 +20,8 @@ apiRouter.use('/productos', productos);
 apiRouter.use('/stock', stock);
 apiRouter.use('/carrito', carrito);
 apiRouter.use('/provincias', provincias);
+apiRouter.use('/direccion-envio', DireccionEnvio);
+apiRouter.use('/checkout', checkout);
+
 
 export default apiRouter

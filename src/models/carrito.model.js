@@ -98,3 +98,19 @@ export const vaciarCarritoUsuario = async (user_id) => {
   );
   return result.affectedRows; // cantidad de filas eliminadas
 };
+
+export const obtenerCarritoYSubtotal = async (userId) => {
+  const [productos] = await Conexion.execute(
+    `SELECT c.*, p.nombre, p.precio_final
+     FROM carrito c
+     JOIN productos p ON c.producto_id = p.id_producto
+     WHERE c.user_id = ?`,
+    [userId]
+  );
+  // Sumar el subtotal
+  const subtotal = productos.reduce(
+    (acum, item) => acum + Number(item.precio_final) * Number(item.cantidad),
+    0
+  );
+  return { productos, subtotal };
+};
