@@ -6,19 +6,26 @@ import errorHandler from "./src/errors/errorHandler.js";
 import Conexion from "./src/config/db.js";
 import cookieParser from "cookie-parser";
 import session from "express-session";
+import passport from './src/config/passport.js'; // <-- Ajustá la ruta si está en otro lado
 
 const Server = express();
 
 Server.use(express.json());
 Server.use(express.urlencoded({ extended: true }));
 Server.use(cookieParser());
+
 Server.use(session({
   secret: process.env.SESSION_SECRET || 'clave ultra secreta',
   resave: false,
   saveUninitialized: false,
   cookie: { httpOnly: true }
-}))
+}));
 
+// Integración de Passport
+Server.use(passport.initialize());
+Server.use(passport.session());
+
+// Tus rutas principales
 Server.use("/", indexRouter);
 
 // Middleware para rutas no válidas (404)
