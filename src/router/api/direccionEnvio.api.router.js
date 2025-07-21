@@ -1,26 +1,18 @@
 import { Router } from "express";
 import * as direccionController from "../../controller/direccionEnvio.controller.js";
+import { requireAuthPassport, requireRolePassport } from '../../middlewares/auth.middleware.js';
 
 const DireccionEnvio = Router();
 
-// Crear dirección de envío para un usuario 
-// POST http://localhost:8080/api/direccion-envio/create/:userId
-DireccionEnvio.post("/create/:userId", direccionController.createDireccionEnvio);
+// Solo admin puede ver todas las direcciones
+DireccionEnvio.get("/list", requireAuthPassport, requireRolePassport('admin'), direccionController.getTodasLasDirecciones);
 
-// Listar todas las direcciones de un usuario
-// GET http://localhost:8080/api/direccion-envio/list
-DireccionEnvio.get("/list", direccionController.getTodasLasDirecciones);
+// Admin o cliente pueden crear, actualizar y eliminar
+DireccionEnvio.post("/create/:userId", requireAuthPassport, requireRolePassport('admin', 'cliente'), direccionController.createDireccionEnvio);
+DireccionEnvio.put("/update/:userId/:id", requireAuthPassport, requireRolePassport('admin', 'cliente'), direccionController.updateDireccionEnvio);
+DireccionEnvio.delete("/destroi/:userId/:id", requireAuthPassport, requireRolePassport('admin', 'cliente'), direccionController.deleteDireccionEnvio);
 
-// Obtener una dirección específica de un usuario
-// GET http://localhost:8080/api/direccion-envio/list/:id
-DireccionEnvio.get("/list/:id", direccionController.getDireccionEnvioById);
-
-// Actualizar una dirección de un usuario
-// PUT http://localhost:8080/api/direccion-envio/update/:userId/:id
-DireccionEnvio.put("/update/:userId/:id", direccionController.updateDireccionEnvio);
-
-// Eliminar una dirección de un usuario
-// DELETE http://localhost:8080/api/direccion-envio/destroi/:userId/:id
-DireccionEnvio.delete("/destroi/:userId/:id", direccionController.deleteDireccionEnvio);
+// Ver dirección específica: cualquier autenticado
+DireccionEnvio.get("/list/:id", requireAuthPassport, direccionController.getDireccionEnvioById);
 
 export default DireccionEnvio;

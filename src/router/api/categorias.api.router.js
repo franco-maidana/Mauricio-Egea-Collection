@@ -1,21 +1,22 @@
 import { Router } from "express";
 import * as categoriaController from '../../controller/categoria.controller.js';
+import { requireAuthPassport, requireRolePassport } from '../../middlewares/auth.middleware.js';
 
 const categorias = Router();
 
-// 1. POST - http://localhost:8080/api/categorias/create
-categorias.post('/create', categoriaController.createCategoria);
+// CREATE - Solo admin
+categorias.post('/create', requireAuthPassport, requireRolePassport('admin'), categoriaController.createCategoria );
 
-// 2. GET - http://localhost:8080/api/categorias/list
+// LIST - Pública
 categorias.get('/list', categoriaController.getCategorias);
 
-//    GET - http://localhost:8080/api/categorias/list/:id
+// GET by ID - Pública
 categorias.get('/list/:id', categoriaController.getCategoriaById);
 
-// 3. PUT - http://localhost:8080/api/categorias/update/:id
-categorias.put('/update/:id', categoriaController.updateCategoria);
+// UPDATE - Solo admin
+categorias.put('/update/:id', requireAuthPassport, requireRolePassport('admin'), categoriaController.updateCategoria );
 
-// 4. DELETE - http://localhost:8080/api/categorias/destroi/:id
-categorias.delete('/destroi/:id', categoriaController.deleteCategoria);
+// DELETE - Solo admin
+categorias.delete('/destroi/:id', requireAuthPassport, requireRolePassport('admin'), categoriaController.deleteCategoria );
 
 export default categorias;

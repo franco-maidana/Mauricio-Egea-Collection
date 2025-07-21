@@ -1,10 +1,9 @@
 import { Router } from "express";
 import { getResumenFinal } from "../../controller/checkout.controller.js";
-
+import { requireAuthPassport, requireRolePassport } from '../../middlewares/auth.middleware.js';
 
 const checkout = Router();
 
-// GET  http://localhost:8080/api/checkout/:userId/:direccionId
-checkout.get("/:userId/:direccionId", getResumenFinal);
+checkout.get("/:userId/:direccionId", requireAuthPassport, requireRolePassport('admin', 'cliente'), getResumenFinal);
 
 export default checkout;

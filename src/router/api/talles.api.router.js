@@ -1,21 +1,22 @@
 import { Router } from "express";
 import * as talleController from '../../controller/talle.controller.js';
+import { requireAuthPassport, requireRolePassport } from '../../middlewares/auth.middleware.js';
 
 const talles = Router();
 
-// 1. POST - http://localhost:8080/api/talles/create
-talles.post('/create', talleController.createTalle);
+// CREATE - Solo admin
+talles.post('/create', requireAuthPassport, requireRolePassport('admin'), talleController.createTalle );
 
-// 2. GET - http://localhost:8080/api/talles/list
+// LIST - Pública
 talles.get('/list', talleController.getTalles);
 
-//    GET - http://localhost:8080/api/talles/list/:id
+// GET BY ID - Pública
 talles.get('/list/:id', talleController.getTalleById);
 
-// 3. PUT - http://localhost:8080/api/talles/update/:id
-talles.put('/update/:id', talleController.updateTalle);
+// UPDATE - Solo admin
+talles.put('/update/:id', requireAuthPassport, requireRolePassport('admin'), talleController.updateTalle );
 
-// 4. DELETE - http://localhost:8080/api/talles/destroi/:id
-talles.delete('/destroi/:id', talleController.deleteTalle);
+// DELETE - Solo admin
+talles.delete('/destroi/:id', requireAuthPassport, requireRolePassport('admin'), talleController.deleteTalle );
 
 export default talles;

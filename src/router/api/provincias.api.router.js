@@ -1,21 +1,13 @@
 import { Router } from "express";
 import * as provinciaController from "../../controller/provincia.controller.js";
+import { requireAuthPassport, requireRolePassport } from '../../middlewares/auth.middleware.js';
 
-const router = Router();
+const provincias = Router();
 
-// Crear provincia http://localhost:8080/api/provincias/create
-router.post("/create", provinciaController.createProvincia);
+provincias.post("/create", requireAuthPassport, requireRolePassport('admin'), provinciaController.createProvincia);
+provincias.get("/listar", provinciaController.getProvincias);
+provincias.get("/listar/:id", provinciaController.getProvinciaById);
+provincias.put("/update/:id", requireAuthPassport, requireRolePassport('admin'), provinciaController.updateProvincia);
+provincias.delete("/destroi/:id", requireAuthPassport, requireRolePassport('admin'), provinciaController.deleteProvincia);
 
-// Listar provincias http://localhost:8080/api/provincias/listar
-router.get("/listar", provinciaController.getProvincias);
-
-// Obtener provincia por ID http://localhost:8080/api/provincias/listar/:id
-router.get("/listar/:id", provinciaController.getProvinciaById);
-
-// Actualizar provincia http://localhost:8080/api/provincias/update/:id
-router.put("/update/:id", provinciaController.updateProvincia);
-
-// Eliminar provincia  http://localhost:8080/api/provincias/destroi/:id
-router.delete("/destroi/:id", provinciaController.deleteProvincia);
-
-export default router;
+export default provincias;

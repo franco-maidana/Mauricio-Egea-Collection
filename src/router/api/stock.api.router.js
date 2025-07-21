@@ -1,28 +1,22 @@
 import { Router } from "express";
 import * as stockController from '../../controller/stock.controller.js';
+import { requireAuthPassport, requireRolePassport } from '../../middlewares/auth.middleware.js';
 
 const stock = Router();
 
-// 3. Crear o setear stock (si existe, actualiza)
-// POST http://localhost:8080/api/stock/set
-// Body: { id_producto, talle_id, stock }
-stock.post('/set', stockController.setStock);
+// CREAR/SET - Solo admin
+stock.post('/set', requireAuthPassport, requireRolePassport('admin'), stockController.setStock );
 
-// 1. Listar todos los talles y stock de un producto
-// GET http://localhost:8080/api/stock/producto/:id_producto
+// LISTAR STOCK DE UN PRODUCTO - Pública
 stock.get('/producto/:id_producto', stockController.getStockPorProducto);
 
-// 2. Obtener stock de un producto y talle específico
-// GET http://localhost:8080/api/stock/producto/:id_producto/talle/:talle_id
+// OBTENER STOCK DE PRODUCTO+TALLE - Pública
 stock.get('/producto/:id_producto/talle/:talle_id', stockController.getStockPorProductoYTalle);
 
-// 4. Actualizar stock (solo si existe la combinación)
-// PUT http://localhost:8080/api/stock/producto/:id_producto/talle/:talle_id
-// Body: { stock }
-stock.put('/producto/:id_producto/talle/:talle_id', stockController.updateStock);
+// ACTUALIZAR STOCK - Solo admin
+stock.put('/producto/:id_producto/talle/:talle_id', requireAuthPassport, requireRolePassport('admin'), stockController.updateStock );
 
-// 5. Eliminar combinación producto+talle
-// DELETE http://localhost:8080/api/stock/producto/:id_producto/talle/:talle_id
-stock.delete('/producto/:id_producto/talle/:talle_id', stockController.deleteStock);
+// ELIMINAR STOCK - Solo admin
+stock.delete('/producto/:id_producto/talle/:talle_id', requireAuthPassport, requireRolePassport('admin'), stockController.deleteStock );
 
 export default stock;

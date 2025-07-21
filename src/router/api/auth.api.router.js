@@ -25,26 +25,14 @@ authRouter.get("/me", requireAuthPassport, mePassport);
 
 authRouter.post("/google/unlink", requireAuthPassport, unlinkGoogle);
 
-
 // -------------------------------
 // Google OAuth2
 // -------------------------------
-
 // GET /api/auth/google - Inicia login con Google
-authRouter.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+authRouter.get("/google", passport.authenticate("google", { scope: ["profile", "email"] })
 );
-
 // GET /api/auth/google/callback - Callback de Google
-authRouter.get(
-  "/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: "/api/auth/google/error", // Redirige a esta ruta si falla
-    session: true,
-  }),
-  (req, res) => {
-    // Si el login fue exitoso, devuelve JSON con los datos del usuario
+authRouter.get("/google/callback",passport.authenticate("google", {failureRedirect: "/api/auth/google/error", session: true,}),(req, res) => {
     res.json({
       ok: true,
       user: req.user,
@@ -52,7 +40,6 @@ authRouter.get(
     });
   }
 );
-
 // Ruta para mostrar error de login con Google
 authRouter.get("/google/error", (req, res) => {
   res.status(401).json({ ok: false, error: "Error de login con Google" });
