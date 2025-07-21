@@ -63,3 +63,27 @@ export async function deleteUser(id) {
 export async function findUserByEmailWithHash(email) {
   return await userModel.getUserByEmail(email);
 }
+
+// Buscar usuario por Google ID
+export async function findUserByGoogleId(googleId) {
+  const user = await userModel.getUserByGoogleId(googleId);
+  return cleanUser(user);
+}
+
+// Crear usuario (con o sin password, adaptable para Google)
+export async function createUserGoogle({ name, last_name, email, avatar_url, google_id }) {
+  const userId = await userModel.createUserGoogle({ name, last_name, email, avatar_url, google_id });
+  return findUserById(userId);
+}
+
+export async function updateUserGoogle(id, data) {
+  // Solo permite actualizar el campo google_id (y avatar si querés)
+  const affected = await userModel.updateUserGoogle(id, data);
+  if (!affected) return null;
+  return findUserById(id);
+}
+
+// ...
+export async function unlinkGoogleAccount(userId) {
+  return userModel.unlinkGoogleAccount(userId);
+}

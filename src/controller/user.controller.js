@@ -147,3 +147,18 @@ export async function deleteUser(req, res, next) {
     next(err);
   }
 }
+
+export async function unlinkGoogle(req, res) {
+  // Suponiendo que usás req.user.id desde la sesión:
+  try {
+    const userId = req.user.id;
+    const affected = await userService.unlinkGoogleAccount(userId);
+    if (affected) {
+      res.json({ ok: true, message: "Cuenta de Google desvinculada." });
+    } else {
+      res.status(404).json({ ok: false, error: "Usuario no encontrado o ya estaba desvinculado." });
+    }
+  } catch (err) {
+    res.status(500).json({ ok: false, error: "Error al desvincular Google" });
+  }
+}
