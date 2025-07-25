@@ -3,7 +3,7 @@ import * as carritoService from '../service/carrito.service.js';
 // agrega un producto del carrito de compra 
 export async function addToCart(req, res, next) {
   try {
-    const user_id = parseInt(req.params.user_id);
+    const user_id = req.user?.id
     const { producto_id, talle_id, cantidad } = req.body;
 
     await carritoService.agregarAlCarrito(user_id, producto_id, talle_id, cantidad);
@@ -23,7 +23,8 @@ export async function addToCart(req, res, next) {
 // se ve los productos dentro del carrito de compra
 export async function getCarritoByUser(req, res, next) {
   try {
-    const user_id = parseInt(req.params.user_id);
+    const user_id = req.user?.id
+
     // Usamos la función correcta del service:
     const resumen = await carritoService.getCarritoByUserConTotal(user_id);
 
@@ -42,7 +43,7 @@ export async function getCarritoByUser(req, res, next) {
 // se modifica un producto dentro de un carrito de compras 
 export async function updateCantidadEnCarrito(req, res, next) {
   try {
-    const user_id = parseInt(req.params.user_id);
+    const user_id = req.user?.id
     const { producto_id, talle_id, cantidad } = req.body;
     console.log({
   user_id,
@@ -83,7 +84,7 @@ export async function deleteCarritoItemById(req, res, next) {
   try {
     const id = parseInt(req.params.id);
     // El user_id puede venir del token/sesión o, si no tenés auth, de req.params.user_id
-    const user_id = parseInt(req.params.user_id); // O de req.user.id si usás JWT/session
+    const user_id = req.user?.id // O de req.user.id si usás JWT/session
 
     await carritoService.eliminarProductoCarritoPorId(id, user_id);
 
@@ -104,7 +105,7 @@ export async function clearCarrito(req, res, next) {
   try {
     // Si usás JWT/session: const user_id = req.user.id;
     // Si no, lo tomás del params:
-    const user_id = parseInt(req.params.user_id);
+    const user_id = req.user?.id
 
     const eliminados = await carritoService.vaciarCarrito(user_id);
 
