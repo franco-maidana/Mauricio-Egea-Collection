@@ -3,17 +3,27 @@ import * as carritoService from '../service/carrito.service.js';
 // agrega un producto del carrito de compra 
 export async function addToCart(req, res, next) {
   try {
-    const user_id = req.user?.id
+    const user_id = req.user?.id;
     const { producto_id, talle_id, cantidad } = req.body;
+
+    // Validación básica de datos recibidos
+    if (!producto_id || !talle_id || !cantidad) {
+      return res.status(400).json({
+        ok: false,
+        message: "Faltan datos obligatorios: producto_id, talle_id o cantidad"
+      });
+    }
 
     await carritoService.agregarAlCarrito(user_id, producto_id, talle_id, cantidad);
 
-    res.status(201).json({
+    return res.status(201).json({
       ok: true,
       message: "Producto agregado al carrito"
     });
+
   } catch (err) {
-    res.status(409).json({
+    // Para errores de stock u otros
+    return res.status(400).json({
       ok: false,
       message: err.message
     });

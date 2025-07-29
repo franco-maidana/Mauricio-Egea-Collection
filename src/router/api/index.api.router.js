@@ -10,6 +10,8 @@ import provincias from "./provincias.api.router.js";
 import DireccionEnvio from "./direccionEnvio.api.router.js";
 import checkout from "./checkout.api.router.js";
 import mercadoPago from "./mercadoPago.js";
+import ordenes from "./orden.api.router.js";
+
 
 const apiRouter = Router()
 
@@ -24,5 +26,6 @@ apiRouter.use('/provincias', provincias);
 apiRouter.use('/direccion-envio', DireccionEnvio);
 apiRouter.use('/checkout', checkout);
 apiRouter.use('/mercado-pago', mercadoPago);
+apiRouter.use('/ordenes', ordenes);
 
 export default apiRouter

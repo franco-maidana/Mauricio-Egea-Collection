@@ -1,4 +1,5 @@
 import * as carritoModel from '../models/carrito.model.js';
+import * as stockModel from '../models/stock.model.js'
 
 // agrega un producto del carrito
 export async function agregarAlCarrito(user_id, producto_id, talle_id, cantidad) {
@@ -6,11 +7,18 @@ export async function agregarAlCarrito(user_id, producto_id, talle_id, cantidad)
   const existente = await carritoModel.existeEnCarrito({ user_id, producto_id, talle_id });
 
   if (existente) {
-    // Ya está en el carrito, no agregues ni sumes
     throw new Error('Este producto ya está en tu carrito. Si queres agregar otro, modifica la cantidad dentro del carrito');
   }
 
-  // 2. Si no existe, insertá normalmente
+  // 2. Consultar stock real ANTES de agregar al carrito
+  const stockRow = await stockModel.getStockPorProductoYTalle(producto_id, talle_id);
+  const stockDisponible = stockRow?.stock ?? 0;
+
+  if (stockDisponible < cantidad) {
+    throw new Error('No hay stock suficiente para este producto y talle');
+  }
+
+  // 3. Si hay stock, insertá normalmente
   return await carritoModel.agregarAlCarrito({
     user_id,
     producto_id,
@@ -35,7 +43,7 @@ export async function getCarritoByUserConTotal(user_id) {
   const subtotal = carritoConTotalPorItem.reduce((acc, prod) => acc + prod.total_item, 0);
 
   // Solo cobra costo de plataforma si el carrito tiene productos
-  const costoPlataforma = productos.length > 0 ? 2500 : 0;
+  const costoPlataforma = productos.length > 0 ? 100 : 0;
   const total = subtotal + costoPlataforma;
 
   return {
