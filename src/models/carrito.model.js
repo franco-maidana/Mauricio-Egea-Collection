@@ -23,19 +23,22 @@ export const existeEnCarrito = async ({ user_id, producto_id, talle_id }) => {
 export const getCarritoByUser = async (user_id) => {
   const [rows] = await Conexion.query(
     `SELECT 
+        c.producto_id,
+        c.talle_id,
         p.nombre AS producto, 
         c.cantidad, 
         p.precio_final AS precio, 
         p.imagen_url AS imagen, 
         t.etiqueta AS talle
-     FROM carrito c
-     JOIN productos p ON c.producto_id = p.id_producto
-     JOIN talles t ON c.talle_id = t.talle_id
-     WHERE c.user_id = ?`,
+      FROM carrito c
+      JOIN productos p ON c.producto_id = p.id_producto
+      JOIN talles t ON c.talle_id = t.talle_id
+      WHERE c.user_id = ?`,
     [user_id]
   );
   return rows;
 };
+
 
 // Actualizar la cantidad de un producto+talle en el carrito de un usuario
 export const updateCantidadCarrito = async ({ user_id, producto_id, talle_id, cantidad }) => {
