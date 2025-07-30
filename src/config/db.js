@@ -1,16 +1,24 @@
-import mysql from 'mysql2/promise'
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
 
-const Conexion = mysql.createPool({
-  host: process.env.SERVIDOR,
-  user: process.env.USUARIO,
-  password: process.env.PASSWORD,
-  database: process.env.BASE_DE_DATOS
-})
+// Cargar el archivo correcto según entorno
+dotenv.config({
+  path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env'
+});
 
-if (Conexion) {
-  console.log('te has conectado a la base de datos...')
-}else(
-  console.log('error en la conexion a la base de datos...')
-)
+let Conexion;
 
-export default Conexion
+try {
+  Conexion = mysql.createPool({
+    host: process.env.SERVIDOR,
+    user: process.env.USUARIO,
+    password: process.env.PASSWORD,
+    database: process.env.BASE_DE_DATOS
+  });
+
+  console.log(`✅ Conectado a la base de datos: ${process.env.BASE_DE_DATOS}`);
+} catch (error) {
+  console.error('❌ Error en la conexión a la base de datos:', error.message);
+}
+
+export default Conexion;
