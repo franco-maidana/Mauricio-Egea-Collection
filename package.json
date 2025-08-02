@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon Server.js",
-    "test": "cross-env NODE_ENV=test vitest run"
+    "test": "cross-env NODE_ENV=test vitest run --reporter=verbose"
   },
   "keywords": [],
   "author": "",
@@ -29,5 +29,10 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "vitest": {
+    "setupFiles": [
+      "./src/testing/setupTests.js"
+    ]
   }
 }

@@ -16,12 +16,14 @@ export const login = async (req, res) => {
   req.session.userId = user.id;
   // Respondemos solo datos públicos
   res.json({
-    message: 'Inicio de sesión exitoso',
-    name: user.name,
-    last_name: user.last_name,
-    role: user.role,
-    avatar_url: user.avatar_url
-  });
+  ok: true,
+  message: 'Inicio de sesión exitoso',
+  name: user.name,
+  last_name: user.last_name,
+  role: user.role,
+  avatar_url: user.avatar_url
+});
+
 };
 
 // Login passport 
@@ -29,12 +31,13 @@ export const loginPassport = (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
     if (err) return next(err);
     if (!user) {
-      return res.status(401).json({ message: info?.message || 'Credenciales inválidas' });
+      return res.status(401).json({ ok: false, message: info?.message || 'Credenciales inválidas' });
     }
     req.logIn(user, err => {
       if (err) return next(err);
-      // Devolver solo datos públicos (adaptalo a tu modelo)
+      // Devolver solo datos públicos
       return res.json({
+        ok: true,
         message: 'Inicio de sesión exitoso',
         name: user.name,
         last_name: user.last_name,
@@ -44,6 +47,7 @@ export const loginPassport = (req, res, next) => {
     });
   })(req, res, next);
 };
+
 
 
 // LOGOUT: destruye la sesión

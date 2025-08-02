@@ -165,3 +165,10 @@ export const getProductosFiltrados = async ({
   return { productos: rows, total };
 };
 
+export const findByName = async (nombre) => {
+  const [rows] = await Conexion.query(
+    "SELECT * FROM productos WHERE nombre = ? LIMIT 1",
+    [nombre]
+  );
+  return rows[0];
+};

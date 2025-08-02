@@ -9,7 +9,7 @@ const productos = Router();
 productos.post('/create', requireAuthPassport, requireRolePassport('admin'), uploadProducto.single('imagen'), productoController.createProducto);
 
 // LIST - Solo admin y cliente autenticados
-productos.get('/list', requireAuthPassport, requireRolePassport('admin', 'cliente'), productoController.getProductos);
+productos.get('/list', requireAuthPassport, requireRolePassport('admin', 'cliente'), productoController.getAllProductos);
 productos.get('/list/:id', requireAuthPassport, requireRolePassport('admin', 'cliente'), productoController.getProductoById);
 
 // UPDATE - Solo admin
