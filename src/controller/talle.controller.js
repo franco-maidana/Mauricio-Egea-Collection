@@ -117,9 +117,11 @@ export async function updateTalle(req, res, next) {
         message: err.message
       });
     }
-    next(err);
+    console.error("❌ Error inesperado al actualizar talle:", err);
+    return res.status(500).json({ ok: false, message: "Error interno del servidor" });
   }
 }
+
 
 // 5. DELETE /talles/:id
 export async function deleteTalle(req, res, next) {

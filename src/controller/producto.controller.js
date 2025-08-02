@@ -1,102 +1,73 @@
 import * as productoService from "../service/producto.service.js";
 
 // 1. POST /productos
-export async function createProducto(req, res, next) {
+export const createProducto = async (req, res) => {
   try {
-    const data = req.body;
-    // Si viene archivo (imagen), guardar URL de Cloudinary
-    if (req.file && req.file.path) {
-      data.imagen_url = req.file.path; // Multer + Cloudinary ya suben y dejan el URL acá
+    const { nombre, descripcion, precio_base, descuento, categoria_id } = req.body;
+
+    // Validar campos obligatorios
+    if (!nombre || !precio_base || !categoria_id) {
+      return res.status(400).json({ ok: false, message: "Nombre, precio_base y categoría son obligatorios" });
     }
 
-    const productoId = await productoService.createProducto(data);
-    if (productoId) {
-      const producto = await productoService.findProductoById(productoId);
-      return res.status(201).json({
-        ok: true,
-        message: "Producto creado correctamente",
-        data: producto,
-      });
-    } else {
-      return res.status(400).json({
-        ok: false,
-        message: "No se pudo crear el producto"
-      });
+    // Verificar duplicado por nombre y categoría
+    const existe = await productoService.findProductoByNombreYCategoria(nombre, categoria_id);
+    if (existe) {
+      return res.status(409).json({ ok: false, message: "El producto ya existe en esa categoría" });
     }
-  } catch (err) {
-    if (err.code === "DUPLICATE_PRODUCTO") {
-      return res.status(400).json({
-        ok: false,
-        message: "Ya existe un producto con ese nombre en la misma categoría."
-      });
-    }
-    if (err.code === "VALIDATION_ERROR") {
-      return res.status(400).json({
-        ok: false,
-        message: err.message
-      });
-    }
-    next(err);
-  }
-}
 
-// 2. GET /productos
-export async function getProductos(req, res, next) {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5;
-    const categoria_id = req.query.categoria_id || null;
-    const sort = req.query.sort || "nombre";
-    const order = req.query.order || "asc";
-
-    const { productos, total } = await productoService.listProductosFiltrados({
+    // Crear producto
+    const nuevoProductoId = await productoService.createProducto({
+      nombre,
+      descripcion,
+      precio_base,
+      descuento,
       categoria_id,
-      page,
-      limit,
-      sort,
-      order
+      imagen_url: req.file?.path || null
     });
 
-    const totalPages = Math.ceil(total / limit);
-
-    if (productos && productos.length > 0) {
-      return res.status(200).json({
-        ok: true,
-        message: 'Productos encontrados',
-        data: productos,
-        pagination: { page, perPage: limit, total, totalPages }
-      });
-    } else {
-      return res.status(404).json({
-        ok: false,
-        message: 'No se encontraron productos'
-      });
-    }
-  } catch (err) {
-    next(err);
+    return res.status(201).json({
+      ok: true,
+      message: "Producto creado correctamente",
+      data: nuevoProductoId
+    });
+  } catch (error) {
+    console.error("❌ Error al crear producto:", error);
+    return res.status(500).json({ ok: false, message: "Error interno del servidor" });
   }
-}
+};
 
-// 3. GET /productos/:id
-export async function getProductoById(req, res, next) {
+// 📌 Obtener producto por ID
+export const getProductoById = async (req, res) => {
   try {
-    const producto = await productoService.findProductoById(req.params.id);
-    if (producto) {
-      return res.status(200).json({
-        ok: true,
-        message: "Producto encontrado",
-        data: producto
-      });
-    } else {
-      return res.status(404).json({
-        ok: false,
-        message: "Producto no encontrado"
-      });
+    const { id } = req.params;
+    const producto = await productoService.findProductoById(id);
+
+    if (!producto) {
+      return res.status(404).json({ ok: false, message: "Producto no encontrado" });
     }
-  } catch (err) {
-    next(err);
+
+    return res.status(200).json({ ok: true, data: producto });
+  } catch (error) {
+    console.error("❌ Error al obtener producto:", error);
+    return res.status(500).json({ ok: false, message: "Error interno del servidor" });
   }
-}
+};
+
+// 📌 Listar productos
+export const getAllProductos = async (req, res) => {
+  try {
+    const productos = await productoService.listProductos();
+
+    return res.status(200).json({
+      ok: true,
+      data: productos
+    });
+  } catch (error) {
+    console.error("❌ Error al listar productos:", error);
+    return res.status(500).json({ ok: false, message: "Error interno del servidor" });
+  }
+};
 
 // 4. PUT /productos/:id
 export async function updateProducto(req, res, next) {

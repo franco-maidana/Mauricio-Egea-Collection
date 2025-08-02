@@ -14,27 +14,23 @@ export const crearDireccionEnvio = async (userId, datos) => {
 
 // Listar direcciones de un usuario
 export const obtenerTodasLasDirecciones = async (page = 1, limit = 5) => {
-  // Forzá los valores acá también
   const pag = parseInt(page) || 1;
   const lim = parseInt(limit) || 5;
   const offset = (pag - 1) * lim;
 
   const [rows] = await Conexion.query(
     `SELECT de.*, u.email, u.name, p.nombre AS provincia
-        FROM direcciones_envio de
-        JOIN users u ON de.user_id = u.id
-        JOIN provincias p ON de.provincia_id = p.id
-      ORDER BY de.id DESC
-      LIMIT ? OFFSET ?`,
+     FROM direcciones_envio de
+     JOIN users u ON de.user_id = u.id
+     JOIN provincias p ON de.provincia_id = p.id
+     ORDER BY de.id DESC
+     LIMIT ? OFFSET ?`,
     [lim, offset]
   );
 
-  const [[{ total }]] = await Conexion.query(
-    'SELECT COUNT(*) as total FROM direcciones_envio'
-  );
-
-  return { direcciones: rows, total };
+  return rows; // ✅ devolver array directo
 };
+
 
 
 // Obtener una dirección por ID (y usuario, para seguridad)

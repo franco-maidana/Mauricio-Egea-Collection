@@ -35,6 +35,12 @@ export const obtenerTodasLasDirecciones = async (page = 1, limit = 5) => {
   return await DireccionModel.obtenerTodasLasDirecciones(page, limit);
 };
 
+// Listar TODAS las direcciones (para admin)
+export const listarDireccionesEnvio = async (page = 1, limit = 5) => {
+  return await DireccionModel.obtenerTodasLasDirecciones(page, limit);
+};
+
+
 // Obtener una dirección por ID y usuario
 export const obtenerDireccionPorId = async (id) => {
   const direccion = await DireccionModel.obtenerDireccionPorId(id);
