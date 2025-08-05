@@ -11,6 +11,7 @@ import DireccionEnvio from "./direccionEnvio.api.router.js";
 import checkout from "./checkout.api.router.js";
 import mercadoPago from "./mercadoPago.js";
 import ordenes from "./orden.api.router.js";
+import test from "./test.router.js";
 
 
 const apiRouter = Router()
@@ -27,5 +28,6 @@ apiRouter.use('/direccion-envio', DireccionEnvio);
 apiRouter.use('/checkout', checkout);
 apiRouter.use('/mercado-pago', mercadoPago);
 apiRouter.use('/ordenes', ordenes);
+apiRouter.use('/test', test);
 
 export default apiRouter
