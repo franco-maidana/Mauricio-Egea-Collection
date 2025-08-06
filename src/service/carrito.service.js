@@ -31,18 +31,25 @@ export async function agregarAlCarrito(user_id, producto_id, talle_id, cantidad)
 export async function getCarritoByUserConTotal(user_id) {
   const productos = await carritoModel.getCarritoByUser(user_id);
 
+  // Mapeo para asegurar valores numéricos y nombre completo
   const carritoConTotalPorItem = productos.map(prod => {
     const precioNum = typeof prod.precio === 'string' ? parseFloat(prod.precio) : prod.precio;
     const cantidadNum = typeof prod.cantidad === 'string' ? parseInt(prod.cantidad) : prod.cantidad;
+
     return {
-      ...prod,
-      total_item: precioNum * cantidadNum
+      producto_id: prod.producto_id,
+      talle_id: prod.talle_id, // ✅ Ahora enviamos el ID real del talle
+      nombre: `${prod.producto} - Talle: ${prod.talle || 'N/A'}`,
+      imagen: prod.imagen,
+      cantidad: cantidadNum,
+      precio_unitario: precioNum,
+      subtotal: precioNum * cantidadNum
     };
   });
 
-  const subtotal = carritoConTotalPorItem.reduce((acc, prod) => acc + prod.total_item, 0);
+  const subtotal = carritoConTotalPorItem.reduce((acc, prod) => acc + prod.subtotal, 0);
 
-  // Solo cobra costo de plataforma si el carrito tiene productos
+  // Solo cobra costo de plataforma si hay productos
   const costoPlataforma = productos.length > 0 ? 100 : 0;
   const total = subtotal + costoPlataforma;
 
@@ -53,6 +60,9 @@ export async function getCarritoByUserConTotal(user_id) {
     total
   };
 }
+
+
+
 
 // modifica los producto del carrito
 export async function modificarProductoEnCarrito(user_id, producto_id, talle_id, nuevosDatos) {
