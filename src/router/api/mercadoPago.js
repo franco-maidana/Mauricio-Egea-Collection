@@ -1,28 +1,31 @@
 import { Router } from "express";
 import { preference } from "../../config/mercadopago.js";
-import { resumenFinalPorUsuario } from "../../service/checkout.service.js"; // <--- IMPORTÁ EL SERVICIO
+import { resumenFinalPorUsuario } from "../../service/checkout.service.js";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import * as carritoModel from "../../models/carrito.model.js";
 import * as carritoService from "../../service/carrito.service.js";
-import * as ordenDetalleService from '../../service/ordenDetalle.service.js'
+import * as ordenService from "../../service/orden.service.js";
+import * as ordenDetalleService from "../../service/ordenDetalle.service.js";
 import Conexion from "../../config/db.js";
+import { generarRemitoPDF } from "../../service/pdf.service.js";
 
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
 });
 const paymentApi = new Payment(mpClient);
-
 const mercadoPago = Router();
 
+const pagosProcesados = new Set();
+
+// ==================== CREAR PREFERENCIA ====================
 mercadoPago.post("/crear-preferencia", async (req, res) => {
   try {
     const userId = req.user?.id;
 
-    // Traé el resumen
     const { productos, subtotal, costoPlataforma, costoEnvio } =
       await resumenFinalPorUsuario(userId);
 
-    // Traé la última dirección del usuario
+    // Dirección
     const [dirs] = await Conexion.execute(
       "SELECT * FROM direcciones_envio WHERE user_id = ? ORDER BY id DESC LIMIT 1",
       [userId]
@@ -34,7 +37,6 @@ mercadoPago.post("/crear-preferencia", async (req, res) => {
     }
     const direccion = dirs[0];
 
-    // Armá payer e items como te pasé arriba
     const payer = {
       name: req.user?.name,
       surname: req.user?.last_name,
@@ -51,20 +53,16 @@ mercadoPago.post("/crear-preferencia", async (req, res) => {
     };
 
     const items = productos.map((p) => ({
-      id: p.id?.toString(),
-      title: `${p.producto} - Talle: ${p.talle}${
-        p.color ? ` - Color: ${p.color}` : ""
-      }`,
+      id: p.producto_id?.toString() ?? p.id?.toString(),
+      title: `${p.nombre ?? p.producto} - Talle: ${p.talle || p.talle_id || "N/A"}`,
       category_id: p.categoria || "fashion",
       description: p.descripcion
         ? p.descripcion
-        : `Producto: ${p.producto}, Talle: ${p.talle}, ${
-            p.color ? `Color: ${p.color}, ` : ""
-          }Cantidad: ${p.cantidad}`,
+        : `Producto: ${p.nombre ?? p.producto}, Talle: ${p.talle || p.talle_id}, Cantidad: ${p.cantidad}`,
       quantity: p.cantidad,
       currency_id: "ARS",
-      unit_price: Number(p.precio),
-      picture_url: p.imagen,
+      unit_price: Number(p.precio_unitario ?? p.precio ?? 0),
+      picture_url: p.imagen || "",
     }));
 
     if (costoPlataforma > 0) {
@@ -90,6 +88,9 @@ mercadoPago.post("/crear-preferencia", async (req, res) => {
       });
     }
 
+    console.log("=== ITEMS ENVIADOS A MP ===");
+    console.log(JSON.stringify(items, null, 2));
+
     const external_reference = `orden-${userId}-${Date.now()}`;
 
     const preferenceData = {
@@ -97,7 +98,7 @@ mercadoPago.post("/crear-preferencia", async (req, res) => {
       payer,
       external_reference,
       notification_url:
-        "https://35d31fbff677.ngrok-free.app/api/mercado-pago/webhook",
+        "https://fd6a31ad26da.ngrok-free.app/api/mercado-pago/webhook",
       back_urls: {
         success: "https://tutienda.com/success",
         failure: "https://tutienda.com/failure",
@@ -117,30 +118,48 @@ mercadoPago.post("/crear-preferencia", async (req, res) => {
   }
 });
 
+// ==================== WEBHOOK ====================
 mercadoPago.post("/webhook", async (req, res) => {
   try {
-    // Log inicial de webhook recibido
-    console.log("==== RECIBIENDO WEBHOOK DE MERCADO PAGO ====");
-    console.log("BODY:", req.body);
+    console.log("==== WEBHOOK DE MERCADO PAGO RECIBIDO ====");
+    console.log("BODY COMPLETO:", req.body);
 
-    // Solo procesar si es un pago ("payment") y tiene ID
+    // ✅ RESPUESTA INMEDIATA PARA QUE MERCADO PAGO NO REINTENTE
+    if (!res.headersSent) res.sendStatus(200);
+
     if (req.body.type === "payment" && req.body.data && req.body.data.id) {
       const paymentId = req.body.data.id;
 
-      // Obtener datos completos del pago desde la API de Mercado Pago
-      const paymentData = await paymentApi.get({ id: paymentId });
-      console.log("Datos completos del pago:", paymentData);
+      if (pagosProcesados.has(paymentId)) {
+        console.log(`⚠️ Pago ${paymentId} ya fue procesado (memoria), ignorando...`);
+        return;
+      }
+      pagosProcesados.add(paymentId);
+      setTimeout(() => pagosProcesados.delete(paymentId), 10 * 60 * 1000);
 
-      // Solo continuar si el pago fue aprobado
+      console.log("📌 1) Obteniendo datos del pago para ID:", paymentId);
+      const paymentData = await paymentApi.get({ id: paymentId });
+      console.log("✅ Datos del pago:", paymentData);
+
       if (paymentData.status === "approved") {
-        // Extraer el userId del campo external_reference ("orden-{userId}-{timestamp}")
+        console.log("✅ 2) Pago aprobado, procesando orden...");
+
         const external_reference = paymentData.external_reference;
         const total = paymentData.transaction_amount;
         const userId = Number(external_reference.split("-")[1]);
 
-        // Buscar la última dirección de envío del usuario
+        console.log("📌 3) UserId detectado:", userId);
+
+        // ✅ Verificar si ya existe una orden para este paymentId
+        const ordenExistente = await ordenService.buscarOrdenPorPaymentId(paymentId);
+        if (ordenExistente) {
+          console.log(`⚠️ Ya existe una orden para paymentId ${paymentId}, ignorando duplicado`);
+          return;
+        }
+
+        // Buscar dirección
         const [dirs] = await Conexion.execute(
-          "SELECT id FROM direcciones_envio WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+          "SELECT * FROM direcciones_envio WHERE user_id = ? ORDER BY id DESC LIMIT 1",
           [userId]
         );
         if (!dirs.length) {
@@ -149,7 +168,7 @@ mercadoPago.post("/webhook", async (req, res) => {
         }
         const direccionEnvioId = dirs[0].id;
 
-        // Insertar la orden en la base de datos con estado 'pagado'
+        // Crear orden
         const [result] = await Conexion.execute(
           `INSERT INTO ordenes 
             (user_id, direccion_envio_id, total, estado, payment_id_mp, metodo_pago)
@@ -157,91 +176,87 @@ mercadoPago.post("/webhook", async (req, res) => {
           [userId, direccionEnvioId, total, paymentId]
         );
 
-        // Generar un número de orden único (ejemplo: ORD-20250727-8)
         const fecha = new Date().toISOString().slice(0, 10).replace(/-/g, "");
         const numeroOrden = `ORD-${fecha}-${result.insertId}`;
 
-        // Actualizar la orden con el número único
         await Conexion.execute(
           `UPDATE ordenes SET numero_orden = ? WHERE id = ?`,
           [numeroOrden, result.insertId]
         );
-        console.log("Orden insertada en la base de datos. Número de orden:", numeroOrden);
+        console.log("✅ 5) Orden creada ID:", result.insertId);
 
-        // Obtener productos del carrito del usuario antes de vaciarlo
+        // Productos del carrito
         const { productos } = await carritoService.getCarritoByUserConTotal(userId);
+        console.log("📦 Productos en carrito:", productos);
 
-        // === INSERTAR DETALLE DE ORDEN EN LA NUEVA TABLA ===
-        for (const prod of productos) {
-          const id_producto = prod.producto_id;
-          const talle_id = prod.talle_id;
-          const cantidad = prod.cantidad;
-          const precio_unitario = prod.precio;
-          const subtotal = prod.total_item;
-          const nombre_producto = prod.producto;
-          const imagen_url = prod.imagen;
-
-          if (id_producto === undefined || talle_id === undefined) {
-            console.log("Producto del carrito sin id_producto o talle_id:", prod);
-            continue;
-          }
-
-          // Insertar cada producto como línea de detalle en la nueva tabla
-          await ordenDetalleService.insertarDetalleEnOrden({
-            orden_id: result.insertId,
-            producto_id: id_producto,
-            talle_id,
-            cantidad,
-            precio_unitario,
-            subtotal,
-            nombre_producto,
-            imagen_url
-          });
+        if (!productos || productos.length === 0) {
+          console.log(`⚠️ No hay productos en el carrito para el pago ${paymentId}. No se genera PDF ni detalle.`);
+          return;
         }
 
-        // Descontar stock de cada producto
         for (const prod of productos) {
-          const id_producto = prod.producto_id;
-          const talle_id = prod.talle_id;
-          const cantidad = prod.cantidad;
+          console.log(`📌 Insertando detalle producto ID:${prod.producto_id}`);
+          await ordenDetalleService.insertarDetalleEnOrden({
+            orden_id: result.insertId,
+            producto_id: prod.producto_id,
+            talle_id: prod.talle_id ?? null,
+            cantidad: prod.cantidad,
+            precio_unitario: prod.precio_unitario ?? prod.precio ?? 0,
+            subtotal: prod.subtotal ?? prod.total_item ?? 0,
+            nombre_producto: prod.nombre ?? prod.producto ?? 'Producto',
+            imagen_url: prod.imagen ?? ''
+          });
 
-          if (id_producto === undefined || talle_id === undefined) {
-            console.log("Producto del carrito sin id_producto o talle_id:", prod);
-            continue;
-          }
-
-          // Actualizar stock solo si hay suficiente (no permite negativo)
-          const [result] = await Conexion.execute(
+          // Descontar stock
+          console.log(`📌 Descontando stock producto:${prod.producto_id}, talle:${prod.talle_id}`);
+          const [upd] = await Conexion.execute(
             `UPDATE stock_por_producto_talle
              SET stock = stock - ?
              WHERE id_producto = ? AND talle_id = ? AND stock >= ?`,
-            [cantidad, id_producto, talle_id, cantidad]
+            [prod.cantidad, prod.producto_id, prod.talle_id ?? 0, prod.cantidad]
           );
-
-          if (result.affectedRows === 0) {
-            console.log(`No se pudo descontar stock: producto ${id_producto}, talle ${talle_id}, cantidad ${cantidad}`);
-          } else {
-            console.log(`Stock actualizado: producto ${id_producto}, talle ${talle_id}, menos ${cantidad}`);
-          }
+          console.log("Resultado update stock:", upd);
         }
 
-        // Vaciar el carrito del usuario después de la compra
-        try {
-          await carritoModel.vaciarCarritoUsuario(userId);
-          console.log("Carrito vaciado correctamente para el usuario:", userId);
-        } catch (e) {
-          console.error("Error al vaciar carrito:", e.message);
+        // Buscar datos del usuario
+        const [[usuario]] = await Conexion.execute(
+          "SELECT name, last_name, email FROM users WHERE id = ?",
+          [userId]
+        );
+
+        // Dirección completa
+        const [[direccion]] = await Conexion.execute(
+          "SELECT direccion, ciudad, cp, telefono FROM direcciones_envio WHERE id = ?",
+          [direccionEnvioId]
+        );
+
+        if (productos.length > 0) {
+          console.log("📌 7) Generando PDF...");
+          await generarRemitoPDF({
+            id: result.insertId,
+            numero_orden: numeroOrden,
+            usuario_nombre: `${usuario?.name ?? ''} ${usuario?.last_name ?? ''}`,
+            usuario_email: usuario?.email ?? '',
+            telefono: direccion?.telefono ?? 'N/A',
+            direccion_envio: direccion?.direccion ?? 'N/A',
+            ciudad: direccion?.ciudad ?? 'N/A',
+            cp: direccion?.cp ?? 'N/A',
+            productos,
+            subtotal: productos.reduce((acc, p) => acc + Number(p.subtotal ?? p.total_item ?? 0), 0),
+            envio: 0,
+            total
+          });
+          console.log("✅ PDF generado en: remitos/remito_" + result.insertId + ".pdf");
         }
-      } else {
-        console.log("El pago no está aprobado. Estado:", paymentData.status);
+
+        // Vaciar carrito
+        await carritoModel.vaciarCarritoUsuario(userId);
+        console.log("✅ 8) Carrito vaciado correctamente");
       }
     }
-    res.status(200).send("OK");
   } catch (err) {
-    console.error("Error en webhook Mercado Pago:", err);
-    res.status(500).send("Error");
+    console.error("❌ Error en webhook Mercado Pago:", err);
   }
 });
-
 
 export default mercadoPago;
