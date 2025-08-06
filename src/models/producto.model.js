@@ -172,3 +172,43 @@ export const findByName = async (nombre) => {
   );
   return rows[0];
 };
+
+// Verificar si hay descuento global activo
+export const existeDescuentoGlobal = async () => {
+  const [rows] = await Conexion.query(
+    `SELECT COUNT(*) AS cantidad FROM productos WHERE descuento_global_activo = 1`
+  );
+  return rows[0].cantidad > 0;
+};
+
+// Aplicar descuento global (tiene prioridad sobre individuales)
+export const aplicarDescuentoGlobal = async (porcentaje) => {
+  const factor = 1 - (porcentaje / 100);
+  const [result] = await Conexion.query(
+    `UPDATE productos 
+     SET descuento_backup = descuento,  -- Guardar descuento actual
+         descuento = ?, 
+         descuento_global_activo = 1,
+         precio_final = ROUND(precio_base * ?, 2)`,
+    [porcentaje, factor]
+  );
+  return result.affectedRows;
+};
+
+
+// Quitar descuento global (volver a los individuales)
+export const quitarDescuentoGlobal = async () => {
+  const [result] = await Conexion.query(
+    `UPDATE productos 
+     SET descuento = descuento_backup,  -- Restaurar el descuento original
+         descuento_backup = 0,
+         descuento_global_activo = 0,
+         precio_final = 
+           CASE 
+             WHEN descuento_backup > 0 THEN ROUND(precio_base - (precio_base * descuento_backup / 100), 2)
+             ELSE precio_base
+           END`
+  );
+  return result.affectedRows;
+};
+

@@ -5,18 +5,15 @@ export const createProducto = async (req, res) => {
   try {
     const { nombre, descripcion, precio_base, descuento, categoria_id } = req.body;
 
-    // Validar campos obligatorios
     if (!nombre || !precio_base || !categoria_id) {
       return res.status(400).json({ ok: false, message: "Nombre, precio_base y categoría son obligatorios" });
     }
 
-    // Verificar duplicado por nombre y categoría
     const existe = await productoService.findProductoByNombreYCategoria(nombre, categoria_id);
     if (existe) {
       return res.status(409).json({ ok: false, message: "El producto ya existe en esa categoría" });
     }
 
-    // Crear producto
     const nuevoProductoId = await productoService.createProducto({
       nombre,
       descripcion,
@@ -73,7 +70,6 @@ export const getAllProductos = async (req, res) => {
 export async function updateProducto(req, res, next) {
   try {
     const data = req.body;
-    // Si viene una nueva imagen, actualizar imagen_url
     if (req.file && req.file.path) {
       data.imagen_url = req.file.path;
     }
@@ -108,7 +104,6 @@ export async function updateProducto(req, res, next) {
   }
 }
 
-
 // 5. DELETE /productos/:id
 export async function deleteProducto(req, res, next) {
   try {
@@ -129,3 +124,33 @@ export async function deleteProducto(req, res, next) {
   }
 }
 
+// PUT /productos/descuento/global
+export async function aplicarDescuentoGlobal(req, res) {
+  try {
+    const { porcentaje } = req.body;
+    const updated = await productoService.aplicarDescuentoGlobal(porcentaje);
+
+    return res.status(200).json({
+      ok: true,
+      message: `Descuento global del ${porcentaje}% aplicado a ${updated} productos`
+    });
+  } catch (error) {
+    console.error("❌ Error al aplicar descuento global:", error);
+    return res.status(400).json({ ok: false, message: error.message });
+  }
+}
+
+// PUT /productos/descuento/quitar
+export async function quitarDescuentoGlobal(req, res) {
+  try {
+    const updated = await productoService.quitarDescuentoGlobal();
+
+    return res.status(200).json({
+      ok: true,
+      message: `Descuento global eliminado de ${updated} productos`
+    });
+  } catch (error) {
+    console.error("❌ Error al quitar descuento global:", error);
+    return res.status(400).json({ ok: false, message: error.message });
+  }
+}

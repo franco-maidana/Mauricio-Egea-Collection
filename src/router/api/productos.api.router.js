@@ -18,4 +18,14 @@ productos.put('/update/:id', requireAuthPassport, requireRolePassport('admin'), 
 // DELETE - Solo admin
 productos.delete('/destroi/:id', requireAuthPassport, requireRolePassport('admin'), productoController.deleteProducto);
 
+// =========================
+// NUEVAS RUTAS PARA DESCUENTO GLOBAL
+// =========================
+
+// Aplicar descuento global - Solo admin
+productos.post('/descuento/global', requireAuthPassport, requireRolePassport('admin'), productoController.aplicarDescuentoGlobal);
+
+// Quitar descuento global - Solo admin
+productos.delete('/descuento/quitar', requireAuthPassport, requireRolePassport('admin'), productoController.quitarDescuentoGlobal);
+
 export default productos;
