@@ -8,18 +8,18 @@ const stock = Router();
 stock.get('/list', requireAuthPassport, requireRolePassport('admin'), stockController.getStockTodosProductos);
 
 // CREAR/SET - Solo admin
-stock.post('/set', requireAuthPassport, requireRolePassport('admin'), stockController.setStock );
+stock.post('/set', requireAuthPassport, requireRolePassport('admin'), stockController.setStock);
 
 // LISTAR STOCK DE UN PRODUCTO - Pública
 stock.get('/producto/:id_producto', stockController.getStockPorProducto);
 
-// OBTENER STOCK DE PRODUCTO+TALLE - Pública
-stock.get('/producto/:id_producto/talle/:talle_id', stockController.getStockPorProductoYTalle);
+// OBTENER STOCK EXACTO producto+color+talle - Pública
+stock.get('/producto/:id_producto/color/:color_id/talle/:talle_id', stockController.getStockPorProductoYTalle);
 
-// ACTUALIZAR STOCK - Solo admin
-stock.put('/producto/:id_producto/talle/:talle_id', requireAuthPassport, requireRolePassport('admin'), stockController.updateStock );
+// ACTUALIZAR STOCK EXACTO - Solo admin
+stock.put('/producto/:id_producto/color/:color_id/talle/:talle_id', requireAuthPassport, requireRolePassport('admin'), stockController.updateStock);
 
-// ELIMINAR STOCK - Solo admin
-stock.delete('/producto/:id_producto/talle/:talle_id', requireAuthPassport, requireRolePassport('admin'), stockController.deleteStock );
+// ELIMINAR COMBINACIÓN EXACTA - Solo admin
+stock.delete('/producto/:id_producto/color/:color_id/talle/:talle_id', requireAuthPassport, requireRolePassport('admin'), stockController.deleteStock);
 
 export default stock;
