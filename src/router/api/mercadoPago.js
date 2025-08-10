@@ -54,11 +54,15 @@ mercadoPago.post("/crear-preferencia", async (req, res) => {
 
     const items = productos.map((p) => ({
       id: p.producto_id?.toString() ?? p.id?.toString(),
-      title: `${p.nombre ?? p.producto} - Talle: ${p.talle || p.talle_id || "N/A"}`,
+      title: `${p.nombre ?? p.producto} - Talle: ${
+        p.talle || p.talle_id || "N/A"
+      }`,
       category_id: p.categoria || "fashion",
       description: p.descripcion
         ? p.descripcion
-        : `Producto: ${p.nombre ?? p.producto}, Talle: ${p.talle || p.talle_id}, Cantidad: ${p.cantidad}`,
+        : `Producto: ${p.nombre ?? p.producto}, Talle: ${
+            p.talle || p.talle_id
+          }, Cantidad: ${p.cantidad}`,
       quantity: p.cantidad,
       currency_id: "ARS",
       unit_price: Number(p.precio_unitario ?? p.precio ?? 0),
@@ -131,7 +135,9 @@ mercadoPago.post("/webhook", async (req, res) => {
       const paymentId = req.body.data.id;
 
       if (pagosProcesados.has(paymentId)) {
-        console.log(`⚠️ Pago ${paymentId} ya fue procesado (memoria), ignorando...`);
+        console.log(
+          `⚠️ Pago ${paymentId} ya fue procesado (memoria), ignorando...`
+        );
         return;
       }
       pagosProcesados.add(paymentId);
@@ -151,9 +157,13 @@ mercadoPago.post("/webhook", async (req, res) => {
         console.log("📌 3) UserId detectado:", userId);
 
         // ✅ Verificar si ya existe una orden para este paymentId
-        const ordenExistente = await ordenService.buscarOrdenPorPaymentId(paymentId);
+        const ordenExistente = await ordenService.buscarOrdenPorPaymentId(
+          paymentId
+        );
         if (ordenExistente) {
-          console.log(`⚠️ Ya existe una orden para paymentId ${paymentId}, ignorando duplicado`);
+          console.log(
+            `⚠️ Ya existe una orden para paymentId ${paymentId}, ignorando duplicado`
+          );
           return;
         }
 
@@ -186,11 +196,15 @@ mercadoPago.post("/webhook", async (req, res) => {
         console.log("✅ 5) Orden creada ID:", result.insertId);
 
         // Productos del carrito
-        const { productos } = await carritoService.getCarritoByUserConTotal(userId);
+        const { productos } = await carritoService.getCarritoByUserConTotal(
+          userId
+        );
         console.log("📦 Productos en carrito:", productos);
 
         if (!productos || productos.length === 0) {
-          console.log(`⚠️ No hay productos en el carrito para el pago ${paymentId}. No se genera PDF ni detalle.`);
+          console.log(
+            `⚠️ No hay productos en el carrito para el pago ${paymentId}. No se genera PDF ni detalle.`
+          );
           return;
         }
 
@@ -200,20 +214,30 @@ mercadoPago.post("/webhook", async (req, res) => {
             orden_id: result.insertId,
             producto_id: prod.producto_id,
             talle_id: prod.talle_id ?? null,
+            color_id: prod.color_id ?? null,
             cantidad: prod.cantidad,
             precio_unitario: prod.precio_unitario ?? prod.precio ?? 0,
             subtotal: prod.subtotal ?? prod.total_item ?? 0,
-            nombre_producto: prod.nombre ?? prod.producto ?? 'Producto',
-            imagen_url: prod.imagen ?? ''
+            nombre_producto: prod.nombre ?? prod.producto ?? "Producto",
+            imagen_url: prod.imagen ?? "",
           });
 
           // Descontar stock
-          console.log(`📌 Descontando stock producto:${prod.producto_id}, talle:${prod.talle_id}`);
+          // Descontar stock (producto + talle + color)
+          console.log(
+            `📌 Descontando stock p:${prod.producto_id}, t:${prod.talle_id}, c:${prod.color_id}`
+          );
           const [upd] = await Conexion.execute(
             `UPDATE stock_por_producto_talle
-             SET stock = stock - ?
-             WHERE id_producto = ? AND talle_id = ? AND stock >= ?`,
-            [prod.cantidad, prod.producto_id, prod.talle_id ?? 0, prod.cantidad]
+              SET stock = stock - ?
+              WHERE id_producto = ? AND talle_id = ? AND color_id = ? AND stock >= ?`,
+            [
+              prod.cantidad,
+              prod.producto_id,
+              prod.talle_id ?? 0,
+              prod.color_id ?? 0,
+              prod.cantidad,
+            ]
           );
           console.log("Resultado update stock:", upd);
         }
@@ -235,18 +259,25 @@ mercadoPago.post("/webhook", async (req, res) => {
           await generarRemitoPDF({
             id: result.insertId,
             numero_orden: numeroOrden,
-            usuario_nombre: `${usuario?.name ?? ''} ${usuario?.last_name ?? ''}`,
-            usuario_email: usuario?.email ?? '',
-            telefono: direccion?.telefono ?? 'N/A',
-            direccion_envio: direccion?.direccion ?? 'N/A',
-            ciudad: direccion?.ciudad ?? 'N/A',
-            cp: direccion?.cp ?? 'N/A',
+            usuario_nombre: `${usuario?.name ?? ""} ${
+              usuario?.last_name ?? ""
+            }`,
+            usuario_email: usuario?.email ?? "",
+            telefono: direccion?.telefono ?? "N/A",
+            direccion_envio: direccion?.direccion ?? "N/A",
+            ciudad: direccion?.ciudad ?? "N/A",
+            cp: direccion?.cp ?? "N/A",
             productos,
-            subtotal: productos.reduce((acc, p) => acc + Number(p.subtotal ?? p.total_item ?? 0), 0),
+            subtotal: productos.reduce(
+              (acc, p) => acc + Number(p.subtotal ?? p.total_item ?? 0),
+              0
+            ),
             envio: 0,
-            total
+            total,
           });
-          console.log("✅ PDF generado en: remitos/remito_" + result.insertId + ".pdf");
+          console.log(
+            "✅ PDF generado en: remitos/remito_" + result.insertId + ".pdf"
+          );
         }
 
         // Vaciar carrito
