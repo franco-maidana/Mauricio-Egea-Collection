@@ -98,3 +98,27 @@ export async function deleteStock(req, res, next) {
     next(err);
   }
 }
+
+// Listar stock de TODOS los productos (con paginación opcional)
+export async function getStockTodosProductos(req, res, next) {
+  try {
+    const page  = Number(req.query.page)  || 1;
+    const limit = Number(req.query.limit) || 50;
+
+    const { rows, total } = await stockService.getStockTodosProductos(page, limit);
+
+    return res.status(200).json({
+      ok: true,
+      message: "Stock de todos los productos",
+      data: rows,
+      pagination: {
+        page,
+        limit,
+        total
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+

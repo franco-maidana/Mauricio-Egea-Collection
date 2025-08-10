@@ -41,3 +41,7 @@ export async function updateStock(id_producto, talle_id, stock) {
 export async function deleteStock(id_producto, talle_id) {
   return await stockModel.deleteStock(id_producto, talle_id);
 }
+
+export async function getStockTodosProductos(page = 1, limit = 50) {
+  return await stockModel.getStockTodosProductos(page, limit);
+}

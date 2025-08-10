@@ -12,6 +12,7 @@ import checkout from "./checkout.api.router.js";
 import mercadoPago from "./mercadoPago.js";
 import ordenes from "./orden.api.router.js";
 import test from "./test.router.js";
+import color from "./color.api.router.js";
 
 
 const apiRouter = Router()
@@ -29,5 +30,7 @@ apiRouter.use('/checkout', checkout);
 apiRouter.use('/mercado-pago', mercadoPago);
 apiRouter.use('/ordenes', ordenes);
 apiRouter.use('/test', test);
+apiRouter.use('/color', color);
+
 
 export default apiRouter
