@@ -4,29 +4,24 @@ import * as carritoService from '../service/carrito.service.js';
 export async function addToCart(req, res, next) {
   try {
     const user_id = req.user?.id;
-    const { producto_id, talle_id, cantidad } = req.body;
+    const { producto_id, talle_id, cantidad, color_id } = req.body;
 
-    // Validación básica de datos recibidos
-    if (!producto_id || !talle_id || !cantidad) {
+    // Validación básica
+    if (!producto_id || !talle_id || !cantidad || !color_id) {
       return res.status(400).json({
         ok: false,
-        message: "Faltan datos obligatorios: producto_id, talle_id o cantidad"
+        message: "Faltan datos obligatorios: producto_id, talle_id, color_id o cantidad"
       });
     }
 
-    await carritoService.agregarAlCarrito(user_id, producto_id, talle_id, cantidad);
+    await carritoService.agregarAlCarrito(user_id, producto_id, talle_id, cantidad, color_id);
 
     return res.status(201).json({
       ok: true,
       message: "Producto agregado al carrito"
     });
-
   } catch (err) {
-    // Para errores de stock u otros
-    return res.status(400).json({
-      ok: false,
-      message: err.message
-    });
+    return res.status(400).json({ ok: false, message: err.message });
   }
 }
 
@@ -53,39 +48,24 @@ export async function getCarritoByUser(req, res, next) {
 // se modifica un producto dentro de un carrito de compras 
 export async function updateCantidadEnCarrito(req, res, next) {
   try {
-    const user_id = req.user?.id
-    const { producto_id, talle_id, cantidad } = req.body;
-    console.log({
-  user_id,
-  producto_id,
-  talle_id,
-  cantidad
-});
+    const user_id = req.user?.id;
+    const { producto_id, talle_id, cantidad, color_id } = req.body;
 
-    // Llama al service, pasando solo los campos recibidos
     const resultado = await carritoService.modificarProductoEnCarrito(
       user_id,
       producto_id,
       talle_id,
-      { cantidad }
+      { cantidad },
+      color_id
     );
 
     if (resultado) {
-      res.status(200).json({
-        ok: true,
-        message: 'Cantidad actualizada en el carrito'
-      });
+      res.status(200).json({ ok: true, message: 'Cantidad actualizada en el carrito' });
     } else {
-      res.status(200).json({
-        ok: true,
-        message: 'No se realizaron cambios (los valores enviados son iguales o están vacíos)'
-      });
+      res.status(200).json({ ok: true, message: 'No se realizaron cambios' });
     }
   } catch (err) {
-    res.status(400).json({
-      ok: false,
-      message: err.message
-    });
+    res.status(400).json({ ok: false, message: err.message });
   }
 }
 

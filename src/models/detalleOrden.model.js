@@ -5,6 +5,7 @@ export async function insertarDetalle({
   orden_id,
   producto_id,
   talle_id,
+  color_id,
   cantidad,
   precio_unitario,
   subtotal,
@@ -13,11 +14,12 @@ export async function insertarDetalle({
 }) {
   await Conexion.execute(
     `INSERT INTO ordenes_detalle 
-      (orden_id, producto_id, talle_id, cantidad, precio_unitario, subtotal, nombre_producto, imagen_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [orden_id, producto_id, talle_id, cantidad, precio_unitario, subtotal, nombre_producto, imagen_url]
+      (orden_id, producto_id, talle_id, color_id, cantidad, precio_unitario, subtotal, nombre_producto, imagen_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [orden_id, producto_id, talle_id, color_id, cantidad, precio_unitario, subtotal, nombre_producto, imagen_url]
   );
 }
+
 
 export async function getDetallePorOrden(orden_id) {
   const [rows] = await Conexion.query(
