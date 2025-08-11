@@ -44,50 +44,48 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:8080/api/auth/google/callback",
+      callbackURL: process.env.GOOGLE_CALLBACK_URL, // 👈 desde .env
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        console.log("===> Perfil recibido de Google:", profile);
+        const debug = (...a) => {
+          if (process.env.NODE_ENV !== "production") console.log(...a);
+        };
 
-        // 1. Buscar por google_id
+        debug("===> Perfil recibido de Google:", profile);
+
+        // 1) Buscar por google_id
         let user = await userService.findUserByGoogleId(profile.id);
-        console.log("¿Existe user por google_id?:", user);
+        debug("¿Existe user por google_id?:", user);
 
         if (!user) {
-          // 2. Si no existe, buscar por email
-          user = await userService.findUserByEmail(profile.emails?.[0]?.value);
-          console.log("¿Existe user por email?:", user);
+          // 2) Buscar por email
+          const email = profile.emails?.[0]?.value;
+          user = await userService.findUserByEmail(email);
+          debug("¿Existe user por email?:", user);
 
           if (user) {
-            // 2a. Si existe por email, asociar google_id SOLO usando updateUserGoogle
-            console.log(
-              "Actualizando google_id del usuario existente SOLO con updateUserGoogle..."
-            );
-            await userService.updateUserGoogle(user.id, {
-              google_id: profile.id,
-            });
-            // Volvemos a buscar el user actualizado
+            debug("Actualizando google_id del usuario existente...");
+            await userService.updateUserGoogle(user.id, { google_id: profile.id });
             user = await userService.findUserById(user.id);
           } else {
-            // 3. Si no existe por email, crear nuevo usuario
-            console.log("Creando usuario nuevo por Google...");
+            debug("Creando usuario nuevo por Google...");
             user = await userService.createUserGoogle({
               name: profile.name.givenName,
               last_name: profile.name.familyName,
-              email: profile.emails?.[0]?.value,
+              email,
               avatar_url: profile.photos?.[0]?.value,
               google_id: profile.id,
             });
           }
         }
 
-        // Confirmamos el user final
-        console.log("Usuario retornado a Passport:", user);
-
+        debug("Usuario retornado a Passport:", user);
         return done(null, user);
       } catch (err) {
-        console.error("Error en GoogleStrategy:", err);
+        if (process.env.NODE_ENV !== "production") {
+          console.error("Error en GoogleStrategy:", err);
+        }
         return done(err, null);
       }
     }

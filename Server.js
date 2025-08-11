@@ -14,6 +14,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import sanitize from "./src/middlewares/sanitize.middleware.js";
 import MySQLStoreFactory from "express-mysql-session";   // ⬅️ Store MySQL
+import csurf from "csurf";                                // ⬅️ CSRF
 
 const Server = express();
 
@@ -114,6 +115,20 @@ Server.use(session({
   unset: "destroy"
 }));
 
+/* 🔒 CSRF basado en sesión
+   - Protege POST/PUT/PATCH/DELETE en /api/*
+   - Excluye el webhook de Mercado Pago
+*/
+const csrfProtection = csurf(); // usa la sesión como storage
+Server.use('/api', (req, res, next) => {
+  if (req.path === '/mercado-pago/webhook') return next(); // excluir webhook
+  return csrfProtection(req, res, next);
+});
+
+// Endpoint para que el front obtenga el token y lo envíe en 'x-csrf-token'
+Server.get('/api/csrf-token', (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
 
 // Passport
 Server.use(passport.initialize());
@@ -121,6 +136,14 @@ Server.use(passport.session());
 
 // Rutas
 Server.use("/", indexRouter);
+
+/* Manejo específico de errores CSRF (antes del handler global) */
+Server.use((err, req, res, next) => {
+  if (err && err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).json({ ok: false, message: 'CSRF token inválido o ausente' });
+  }
+  return next(err);
+});
 
 // Manejo de errores
 Server.use(pathError);
@@ -146,3 +169,6 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 export default Server;
+
+// Recordatorio rápido para el front: primero GET /api/csrf-token con credentials: 'include';
+// luego, en cada POST/PUT/PATCH/DELETE, enviar el header x-csrf-token y credentials: 'include'.
