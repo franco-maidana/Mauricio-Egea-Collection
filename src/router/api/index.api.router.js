@@ -14,8 +14,7 @@ import ordenes from "./orden.api.router.js";
 import test from "./test.router.js";
 import color from "./color.api.router.js";
 
-
-const apiRouter = Router()
+const apiRouter = Router();
 
 apiRouter.use('/users', users);
 apiRouter.use('/auth', authRouter);
@@ -29,8 +28,11 @@ apiRouter.use('/direccion-envio', DireccionEnvio);
 apiRouter.use('/checkout', checkout);
 apiRouter.use('/mercado-pago', mercadoPago);
 apiRouter.use('/ordenes', ordenes);
-apiRouter.use('/test', test);
 apiRouter.use('/color', color);
 
+// ⛔ /test SOLO en desarrollo
+if (process.env.NODE_ENV !== 'production') {
+  apiRouter.use('/test', test);
+}
 
-export default apiRouter
+export default apiRouter;
