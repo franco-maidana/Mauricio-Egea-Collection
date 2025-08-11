@@ -1,93 +1,118 @@
-import bcrypt from 'bcrypt';
-import * as userService from '../service/user.service.js';
-import passport from '../config/passport.js'
+// src/controller/auth.controller.js
+import bcrypt from "bcrypt";
+import * as userService from "../service/user.service.js";
+import passport from "../config/passport.js";
 
-// LOGIN: autentica y pone userId en la sesión
-export const login = async (req, res) => {
-  const { email, password } = req.body;
-  const user = await userService.findUserByEmailWithHash(email);
-  if (!user) {
-    return res.status(401).json({ message: 'Credenciales inválidas' });
-  }
-  const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) {
-    return res.status(401).json({ message: 'Credenciales inválidas' });
-  }
-  req.session.userId = user.id;
-  // Respondemos solo datos públicos
-  res.json({
-  ok: true,
-  message: 'Inicio de sesión exitoso',
-  name: user.name,
-  last_name: user.last_name,
-  role: user.role,
-  avatar_url: user.avatar_url
+// Helper para devolver solo datos públicos
+const publicUser = (u) => ({
+  id: u.id,
+  name: u.name,
+  last_name: u.last_name,
+  role: u.role,
+  avatar_url: u.avatar_url,
 });
 
-};
+// ==============================
+// LOGIN manual (sin Passport)
+// ==============================
+export const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body || {};
+    const user = await userService.findUserByEmailWithHash(email);
+    if (!user) return res.status(401).json({ ok: false, message: "Credenciales inválidas" });
 
-// Login passport 
-export const loginPassport = (req, res, next) => {
-  passport.authenticate('local', (err, user, info) => {
-    if (err) return next(err);
-    if (!user) {
-      return res.status(401).json({ ok: false, message: info?.message || 'Credenciales inválidas' });
-    }
-    req.logIn(user, err => {
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) return res.status(401).json({ ok: false, message: "Credenciales inválidas" });
+
+    // Anti–session fixation
+    req.session.regenerate((err) => {
       if (err) return next(err);
-      // Devolver solo datos públicos
+      req.session.userId = user.id;
       return res.json({
         ok: true,
-        message: 'Inicio de sesión exitoso',
-        name: user.name,
-        last_name: user.last_name,
-        role: user.role,
-        avatar_url: user.avatar_url
+        message: "Inicio de sesión exitoso",
+        user: publicUser(user),
+      });
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ==============================
+// LOGIN con Passport (estrategia local)
+// ==============================
+export const loginPassport = (req, res, next) => {
+  passport.authenticate("local", (err, user, info) => {
+    if (err) return next(err);
+    if (!user) {
+      return res
+        .status(401)
+        .json({ ok: false, message: info?.message || "Credenciales inválidas" });
+    }
+
+    // Anti–session fixation
+    req.session.regenerate((err) => {
+      if (err) return next(err);
+
+      req.logIn(user, (err) => {
+        if (err) return next(err);
+        return res.json({
+          ok: true,
+          message: "Inicio de sesión exitoso",
+          user: publicUser(user),
+        });
       });
     });
   })(req, res, next);
 };
 
+// ==============================
+// LOGOUT (común para ambas variantes)
+// ==============================
+const clearSidCookie = (res) => {
+  const isProd = process.env.NODE_ENV === "production";
+  res.clearCookie("sid", {
+    path: "/",
+    sameSite: isProd ? "none" : "lax",
+    secure: isProd,
+  });
+};
 
-
-// LOGOUT: destruye la sesión
 export const logout = (req, res) => {
-  req.session.destroy(err => {
-    if (err) return res.status(500).json({ message: 'Error al cerrar sesión' });
-    res.clearCookie('connect.sid');
-    res.json({ message: 'Sesión cerrada correctamente' });
+  // Manual (sin passport)
+  req.session.destroy(() => {
+    clearSidCookie(res);
+    return res.json({ ok: true, message: "Sesión cerrada correctamente" });
   });
 };
 
-// Logout passport 
 export const logoutPassport = (req, res) => {
-  req.logout(err => {
-    if (err) return res.status(500).json({ message: 'Error al cerrar sesión' });
-    res.clearCookie('connect.sid');
-    res.json({ message: 'Sesión cerrada correctamente' });
+  // Con passport
+  req.logout(() => {
+    req.session.destroy(() => {
+      clearSidCookie(res);
+      return res.json({ ok: true, message: "Sesión cerrada correctamente" });
+    });
   });
 };
 
-// /me: retorna usuario autenticado (solo datos públicos)
-export const me = (req, res) => {
-  // req.user ya fue seteado por requireAuth
-  res.json({
-    name: req.user.name,
-    last_name: req.user.last_name,
-    role: req.user.role,
-    avatar_url: req.user.avatar_url
-  });
-};
-
-// ME passport 
-export const mePassport = (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: 'No autenticado' });
+// ==============================
+// /me (manual y passport)
+// ==============================
+export const me = async (req, res) => {
+  // Variante manual: usa req.session.userId
+  if (!req.session?.userId) {
+    return res.status(401).json({ ok: false, message: "No autenticado" });
   }
-  res.json({
-    name: req.user.name,
-    last_name: req.user.last_name,
-    role: req.user.role,
-    avatar_url: req.user.avatar_url
-  });
+  const user = await userService.findUserById(req.session.userId);
+  if (!user) return res.status(401).json({ ok: false, message: "No autenticado" });
+  return res.json({ ok: true, user: publicUser(user) });
+};
+
+export const mePassport = (req, res) => {
+  if (!req.isAuthenticated?.() || !req.user) {
+    return res.status(401).json({ ok: false, message: "No autenticado" });
+  }
+  return res.json({ ok: true, user: publicUser(req.user) });
 };
