@@ -66,7 +66,27 @@ const loginLimiter = rateLimit({
   legacyHeaders: false
 });
 
-Server.use("/api", apiLimiter);
+// ⏳ Rate limit específico para el webhook de Mercado Pago
+const webhookLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  limit: 100,               // máx 100 hits por IP en la ventana
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  handler: (req, res, _next, options) => {
+    res.status(options.statusCode).json({ ok: false, message: "Demasiadas solicitudes" });
+  }
+});
+
+// Aplicar limiter del webhook ANTES de montar rutas
+Server.use("/api/mercado-pago/webhook", webhookLimiter);
+
+// Aplicar limiter general de /api, pero SALTAR el webhook (evita doble limit)
+Server.use("/api", (req, res, next) => {
+  if (req.path === "/mercado-pago/webhook") return next();
+  return apiLimiter(req, res, next);
+});
+
 Server.use("/api/auth/login", loginLimiter);
 
 // Parsers
@@ -169,6 +189,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 export default Server;
+
 
 // Recordatorio rápido para el front: primero GET /api/csrf-token con credentials: 'include';
 // luego, en cada POST/PUT/PATCH/DELETE, enviar el header x-csrf-token y credentials: 'include'.
