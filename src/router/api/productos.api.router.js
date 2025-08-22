@@ -10,9 +10,14 @@ const productos = Router();
 productos.post('/create', requireAuthPassport, requireRolePassport('admin'), uploadProducto.single('imagen'), sanitize, productoController.createProducto);
 
 // LIST - Solo admin y cliente autenticados
-productos.get('/list', requireAuthPassport, requireRolePassport('admin', 'cliente'), productoController.getAllProductos);
-productos.get('/list/:id', requireAuthPassport, requireRolePassport('admin', 'cliente'), productoController.getProductoById);
+productos.get('/list',  productoController.getAllProductos);
+productos.get('/list/:id', productoController.getProductoById);
+// LISTAR POR CATEGORÍA - Pública
+productos.get("/categoria/:categoria_id", productoController.getProductosByCategoria);
 
+productos.get("/descuentos", productoController.getProductosConDescuento);
+
+productos.get("/buscar/:termino", productoController.buscarProductos);
 // UPDATE - Solo admin
 productos.put('/update/:id', requireAuthPassport, requireRolePassport('admin'), uploadProducto.single('imagen'), sanitize , productoController.updateProducto);
 

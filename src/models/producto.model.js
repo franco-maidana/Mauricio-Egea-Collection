@@ -212,3 +212,20 @@ export const quitarDescuentoGlobal = async () => {
   return result.affectedRows;
 };
 
+// producto.model.js
+export const getProductosConDescuento = async () => {
+  const [rows] = await Conexion.query(
+    "SELECT * FROM productos WHERE descuento > 0 OR descuento_global_activo = 1"
+  );
+  return rows;
+};
+
+// producto.model.js
+export const searchProductos = async (termino) => {
+  const like = `%${termino}%`;
+  const [rows] = await Conexion.query(
+    "SELECT * FROM productos WHERE nombre LIKE ?",
+    [like]
+  );
+  return rows;
+};

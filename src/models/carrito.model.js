@@ -1,7 +1,13 @@
-import Conexion from '../config/db.js';
+import Conexion from "../config/db.js";
 
 // Agregar producto al carrito
-export async function agregarAlCarrito({ user_id, producto_id, talle_id, color_id, cantidad }) {
+export async function agregarAlCarrito({
+  user_id,
+  producto_id,
+  talle_id,
+  color_id,
+  cantidad,
+}) {
   const [res] = await Conexion.query(
     `INSERT INTO carrito (user_id, producto_id, talle_id, color_id, cantidad, fecha_agregado)
      VALUES (?, ?, ?, ?, ?, NOW())`,
@@ -10,9 +16,13 @@ export async function agregarAlCarrito({ user_id, producto_id, talle_id, color_i
   return res.insertId;
 }
 
-
 // Verifica si ya existe el producto+talle en el carrito del usuario
-export async function existeEnCarrito({ user_id, producto_id, talle_id, color_id }) {
+export async function existeEnCarrito({
+  user_id,
+  producto_id,
+  talle_id,
+  color_id,
+}) {
   const [rows] = await Conexion.query(
     `SELECT * 
        FROM carrito
@@ -23,35 +33,39 @@ export async function existeEnCarrito({ user_id, producto_id, talle_id, color_id
   return rows[0];
 }
 
-
 // Listar productos del carrito de un usuario, solo con los campos que necesitás
 export const getCarritoByUser = async (user_id) => {
   const [rows] = await Conexion.query(
     `SELECT 
-        c.producto_id,
-        c.talle_id,
-        c.color_id,
-        p.nombre AS producto, 
-        c.cantidad, 
-        p.precio_final AS precio, 
-        p.imagen_url AS imagen, 
-        t.etiqueta AS talle,
-        col.nombre AS color
-      FROM carrito c
-      JOIN productos p ON c.producto_id = p.id_producto
-      JOIN talles t ON c.talle_id = t.talle_id
-      JOIN colores col ON c.color_id = col.id
-      WHERE c.user_id = ?`,
+    c.id,                          -- 👈 este es el id de la fila en carrito
+    c.producto_id,
+    c.talle_id,
+    c.color_id,
+    p.nombre AS producto, 
+    c.cantidad, 
+    p.precio_final AS precio, 
+    p.imagen_url AS imagen, 
+    t.etiqueta AS talle,
+    col.nombre AS color
+FROM carrito c
+JOIN productos p ON c.producto_id = p.id_producto
+JOIN talles t ON c.talle_id = t.talle_id
+JOIN colores col ON c.color_id = col.id
+WHERE c.user_id = ?
+`,
     [user_id]
   );
   return rows;
 };
 
-
-
-
 // Actualizar la cantidad de un producto+talle en el carrito de un usuario
-export const updateCantidadCarrito = async ({ user_id, producto_id, talle_id, color_id, cantidad }) => {
+export const updateCantidadCarrito = async ({
+  user_id,
+  producto_id,
+  talle_id,
+  color_id,
+  cantidad,
+}) => {
   const campos = [];
   const valores = [];
 
@@ -79,30 +93,31 @@ export const updateCantidadCarrito = async ({ user_id, producto_id, talle_id, co
   return result.affectedRows;
 };
 
-
 // Devuelve el primer registro del carrito para ese usuario y producto (sin filtrar talle)
-export const getPrimeraEntradaProductoCarrito = async (user_id, producto_id, color_id) => {
+export const getPrimeraEntradaProductoCarrito = async (
+  user_id,
+  producto_id,
+  color_id
+) => {
   let query = `SELECT * FROM carrito WHERE user_id = ? AND producto_id = ?`;
   const params = [user_id, producto_id];
-  
+
   if (color_id) {
     query += ` AND color_id = ?`;
     params.push(color_id);
   }
-  
+
   query += ` LIMIT 1`;
-  
+
   const [rows] = await Conexion.query(query, params);
   return rows[0];
 };
 
-
-// elimina un producto del carrito de compra 
+// elimina un producto del carrito de compra
 export const deleteCarritoItemById = async (id) => {
-  const [result] = await Conexion.query(
-    `DELETE FROM carrito WHERE id = ?`,
-    [id]
-  );
+  const [result] = await Conexion.query(`DELETE FROM carrito WHERE id = ?`, [
+    id,
+  ]);
   return result.affectedRows;
 };
 

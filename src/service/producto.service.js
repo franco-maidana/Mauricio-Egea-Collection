@@ -65,8 +65,16 @@ export async function deleteProducto(id) {
 }
 
 export async function listProductosByCategoria(categoria_id, page = 1, limit = 5) {
-  return await productoModel.getProductosByCategoria(categoria_id, page, limit);
+  const { productos, total } = await productoModel.getProductosByCategoria(categoria_id, page, limit);
+  return {
+    ok: true,
+    data: {
+      productos,
+      total
+    }
+  };
 }
+
 
 export async function listProductosFiltrados({ categoria_id, page, limit, sort, order }) {
   return await productoModel.getProductosFiltrados({ categoria_id, page, limit, sort, order });
@@ -93,4 +101,14 @@ export async function quitarDescuentoGlobal() {
   }
 
   return await productoModel.quitarDescuentoGlobal();
+}
+
+
+// producto.service.js
+export async function listProductosConDescuento() {
+  return await productoModel.getProductosConDescuento();
+}
+
+export async function searchProductos(termino) {
+  return await productoModel.searchProductos(termino);
 }

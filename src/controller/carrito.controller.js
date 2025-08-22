@@ -1,6 +1,6 @@
 import * as carritoService from '../service/carrito.service.js';
 
-// agrega un producto del carrito de compra 
+// agrega un producto al carrito
 export async function addToCart(req, res, next) {
   try {
     const user_id = req.user?.id;
@@ -25,19 +25,17 @@ export async function addToCart(req, res, next) {
   }
 }
 
-// se ve los productos dentro del carrito de compra
+// ver los productos del carrito
 export async function getCarritoByUser(req, res, next) {
   try {
-    const user_id = req.user?.id
+    const user_id = req.user?.id;
 
-    // Usamos la función correcta del service:
     const resumen = await carritoService.getCarritoByUserConTotal(user_id);
 
     res.status(200).json({
       ok: true,
-      carrito: resumen.productos,
+      carrito: resumen.productos,   // ahora cada producto trae "id"
       subtotal: resumen.subtotal,
-      costoPlataforma: resumen.costoPlataforma,
       total: resumen.total
     });
   } catch (err) {
@@ -45,7 +43,7 @@ export async function getCarritoByUser(req, res, next) {
   }
 }
 
-// se modifica un producto dentro de un carrito de compras 
+// modificar cantidad
 export async function updateCantidadEnCarrito(req, res, next) {
   try {
     const user_id = req.user?.id;
@@ -69,12 +67,11 @@ export async function updateCantidadEnCarrito(req, res, next) {
   }
 }
 
-// se elimina un producto dentro del carrito de compras
+// eliminar producto por id
 export async function deleteCarritoItemById(req, res, next) {
   try {
-    const id = parseInt(req.params.id);
-    // El user_id puede venir del token/sesión o, si no tenés auth, de req.params.user_id
-    const user_id = req.user?.id // O de req.user.id si usás JWT/session
+    const id = parseInt(req.params.id); // id de la fila en carrito
+    const user_id = req.user?.id;
 
     await carritoService.eliminarProductoCarritoPorId(id, user_id);
 
@@ -90,19 +87,16 @@ export async function deleteCarritoItemById(req, res, next) {
   }
 }
 
-// se vacia por completo el carrito de compras
+// vaciar carrito completo
 export async function clearCarrito(req, res, next) {
   try {
-    // Si usás JWT/session: const user_id = req.user.id;
-    // Si no, lo tomás del params:
-    const user_id = req.user?.id
-
+    const user_id = req.user?.id;
     const eliminados = await carritoService.vaciarCarrito(user_id);
 
     res.status(200).json({
       ok: true,
       message: "Carrito vaciado correctamente",
-      eliminados // cantidad de ítems borrados
+      eliminados
     });
   } catch (err) {
     res.status(404).json({

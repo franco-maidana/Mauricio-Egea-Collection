@@ -5,7 +5,7 @@ import { requireAuthPassport, requireRolePassport } from '../../middlewares/auth
 const stock = Router();
 
 // LISTAR STOCK DE TODOS LOS PRODUCTOS - Admin
-stock.get('/list', requireAuthPassport, requireRolePassport('admin'), stockController.getStockTodosProductos);
+stock.get('/list', stockController.getStockTodosProductos);
 
 // CREAR/SET - Solo admin
 stock.post('/set', requireAuthPassport, requireRolePassport('admin'), stockController.setStock);

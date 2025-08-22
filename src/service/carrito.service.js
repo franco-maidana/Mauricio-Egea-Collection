@@ -46,23 +46,33 @@ export async function getCarritoByUserConTotal(user_id) {
   const productos = await carritoModel.getCarritoByUser(user_id);
 
   // Mapeo para asegurar valores numéricos y agregar color y talle al nombre
-  const carritoConTotalPorItem = productos.map(prod => {
-    const precioNum = typeof prod.precio === 'string' ? parseFloat(prod.precio) : prod.precio;
-    const cantidadNum = typeof prod.cantidad === 'string' ? parseInt(prod.cantidad) : prod.cantidad;
+  const carritoConTotalPorItem = productos.map((prod) => {
+    const precioNum =
+      typeof prod.precio === "string" ? parseFloat(prod.precio) : prod.precio;
+    const cantidadNum =
+      typeof prod.cantidad === "string"
+        ? parseInt(prod.cantidad)
+        : prod.cantidad;
 
     return {
+      id: prod.id, // 👈 este es el id de la fila en carrito
       producto_id: prod.producto_id,
       talle_id: prod.talle_id,
       color_id: prod.color_id,
-      nombre: `${prod.producto} - Color: ${prod.color || 'N/A'} - Talle: ${prod.talle || 'N/A'}`,
+      nombre: `${prod.producto} - Color: ${prod.color || "N/A"} - Talle: ${
+        prod.talle || "N/A"
+      }`,
       imagen: prod.imagen,
       cantidad: cantidadNum,
       precio_unitario: precioNum,
-      subtotal: precioNum * cantidadNum
+      subtotal: precioNum * cantidadNum,
     };
   });
 
-  const subtotal = carritoConTotalPorItem.reduce((acc, prod) => acc + prod.subtotal, 0);
+  const subtotal = carritoConTotalPorItem.reduce(
+    (acc, prod) => acc + prod.subtotal,
+    0
+  );
 
   // Sin costo de plataforma
   const total = subtotal;
@@ -70,10 +80,9 @@ export async function getCarritoByUserConTotal(user_id) {
   return {
     productos: carritoConTotalPorItem,
     subtotal,
-    total
+    total,
   };
 }
-
 
 // modifica los producto del carrito
 export async function modificarProductoEnCarrito(

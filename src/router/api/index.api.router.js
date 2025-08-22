@@ -16,23 +16,29 @@ import color from "./color.api.router.js";
 
 const apiRouter = Router();
 
+// Usuarios y auth
 apiRouter.use('/users', users);
 apiRouter.use('/auth', authRouter);
+
+// Catálogos
 apiRouter.use('/categorias', categorias);
-apiRouter.use('/talles', talles);
 apiRouter.use('/productos', productos);
+apiRouter.use('/talles', talles);
+apiRouter.use('/color', color);
 apiRouter.use('/stock', stock);
-apiRouter.use('/carrito', carrito);
 apiRouter.use('/provincias', provincias);
+
+// Proceso de compra
+apiRouter.use('/carrito', carrito);
 apiRouter.use('/direccion-envio', DireccionEnvio);
 apiRouter.use('/checkout', checkout);
 apiRouter.use('/mercado-pago', mercadoPago);
 apiRouter.use('/ordenes', ordenes);
-apiRouter.use('/color', color);
 
-// ⛔ /test SOLO en desarrollo
+// Desarrollo
 if (process.env.NODE_ENV !== 'production') {
   apiRouter.use('/test', test);
 }
+
 
 export default apiRouter;

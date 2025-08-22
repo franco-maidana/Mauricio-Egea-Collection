@@ -102,7 +102,7 @@ mercadoPago.post("/crear-preferencia", async (req, res) => {
       payer,
       external_reference,
       notification_url:
-        "https://fd6a31ad26da.ngrok-free.app/api/mercado-pago/webhook",
+        "https://ed28488220ca.ngrok-free.app/api/mercado-pago/webhook",
       back_urls: {
         success: "https://tutienda.com/success",
         failure: "https://tutienda.com/failure",

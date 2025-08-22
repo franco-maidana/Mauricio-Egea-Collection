@@ -4,16 +4,22 @@ import Conexion from "../config/db.js";
 export const crearDireccionEnvio = async (userId, datos) => {
   const [result] = await Conexion.execute(
     `INSERT INTO direcciones_envio 
-      (user_id, direccion, ciudad, provincia_id, cp, telefono, referencia) 
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      (user_id, calle, numero, entre_calle_1, entre_calle_2, barrio, ciudad, provincia_id, cp, telefono, referencia, es_predeterminada, activo) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId,
-      datos.direccion,
+      datos.calle,
+      datos.numero,
+      datos.entre_calle_1 || null,
+      datos.entre_calle_2 || null,
+      datos.barrio || null,
       datos.ciudad,
       datos.provincia_id,
       datos.cp || null,
       datos.telefono || null,
-      datos.referencia || null
+      datos.referencia || null,
+      datos.es_predeterminada || 0,
+      datos.activo !== undefined ? datos.activo : 1,
     ]
   );
   return result.insertId;
@@ -39,27 +45,20 @@ export const obtenerTodasLasDirecciones = async (page = 1, limit = 5) => {
 };
 
 // Obtener una dirección por ID (opcionalmente filtrada por usuario)
-export const obtenerDireccionPorId = async (id, userId = null) => {
-  if (!id || isNaN(id)) {
-    throw new Error("El id de la dirección es requerido y debe ser numérico");
-  }
-
-  let sql = `
-    SELECT de.*, u.email, u.name, p.nombre AS provincia
-    FROM direcciones_envio de
-    JOIN users u ON de.user_id = u.id
-    JOIN provincias p ON de.provincia_id = p.id
-    WHERE de.id = ?`;
+// models/direccionEnvio.model.js
+export const obtenerDireccionPorId = async (id, userId) => {
+  let sql = "SELECT * FROM direcciones_envio WHERE id = ?";
   const params = [id];
 
   if (userId) {
-    sql += " AND de.user_id = ?";
+    sql += " AND user_id = ?";
     params.push(userId);
   }
 
   const [rows] = await Conexion.execute(sql, params);
-  return rows[0] || null;
+  return rows[0];
 };
+
 
 // Actualizar una dirección
 export const actualizarDireccionEnvio = async (id, userId, datos) => {
@@ -69,9 +68,25 @@ export const actualizarDireccionEnvio = async (id, userId, datos) => {
   const campos = [];
   const valores = [];
 
-  if (datos.direccion?.trim()) {
-    campos.push("direccion = ?");
-    valores.push(datos.direccion.trim());
+  if (datos.calle?.trim()) {
+    campos.push("calle = ?");
+    valores.push(datos.calle.trim());
+  }
+  if (datos.numero?.trim()) {
+    campos.push("numero = ?");
+    valores.push(datos.numero.trim());
+  }
+  if (datos.entre_calle_1?.trim()) {
+    campos.push("entre_calle_1 = ?");
+    valores.push(datos.entre_calle_1.trim());
+  }
+  if (datos.entre_calle_2?.trim()) {
+    campos.push("entre_calle_2 = ?");
+    valores.push(datos.entre_calle_2.trim());
+  }
+  if (datos.barrio?.trim()) {
+    campos.push("barrio = ?");
+    valores.push(datos.barrio.trim());
   }
   if (datos.ciudad?.trim()) {
     campos.push("ciudad = ?");
@@ -93,6 +108,14 @@ export const actualizarDireccionEnvio = async (id, userId, datos) => {
     campos.push("referencia = ?");
     valores.push(datos.referencia.trim());
   }
+  if (datos.es_predeterminada !== undefined) {
+    campos.push("es_predeterminada = ?");
+    valores.push(datos.es_predeterminada ? 1 : 0);
+  }
+  if (datos.activo !== undefined) {
+    campos.push("activo = ?");
+    valores.push(datos.activo ? 1 : 0);
+  }
 
   if (campos.length === 0) {
     return 0; // Nada para actualizar
@@ -104,7 +127,7 @@ export const actualizarDireccionEnvio = async (id, userId, datos) => {
   return result.affectedRows;
 };
 
-// Eliminar una dirección
+// Eliminar una dirección (delete real)
 export const eliminarDireccionEnvio = async (id, userId) => {
   const [result] = await Conexion.execute(
     `DELETE FROM direcciones_envio WHERE id = ? AND user_id = ?`,
@@ -121,3 +144,12 @@ export const obtenerDireccionesPorUsuario = async (userId) => {
   );
   return rows;
 };
+
+// Marcar todas las direcciones de un usuario como NO predeterminadas
+export const marcarTodasComoNoPredeterminadas = async (userId) => {
+  await Conexion.execute(
+    "UPDATE direcciones_envio SET es_predeterminada = 0 WHERE user_id = ?",
+    [userId]
+  );
+};
+

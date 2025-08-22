@@ -31,23 +31,13 @@ export async function createCategoria(req, res, next) {
 // 2. GET /categorias
 export async function getCategorias(req, res, next) {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = 5;
-    const { categorias, total } = await categoriaService.listCategoriasPaginated(page, limit);
-
-    const totalPages = Math.ceil(total / limit);
+    const categorias = await categoriaService.listCategorias();
 
     if (categorias && categorias.length > 0) {
       res.status(200).json({
         ok: true,
         message: 'Categorías encontradas',
-        data: categorias,
-        pagination: {
-          page,
-          perPage: limit,
-          total,
-          totalPages
-        }
+        data: categorias
       });
     } else {
       res.status(404).json({
@@ -59,6 +49,7 @@ export async function getCategorias(req, res, next) {
     next(err);
   }
 }
+
 
 // 3. GET /categorias/:id
 export async function getCategoriaById(req, res, next) {

@@ -154,3 +154,40 @@ export async function quitarDescuentoGlobal(req, res) {
     return res.status(400).json({ ok: false, message: error.message });
   }
 }
+
+// 📌 Listar productos por categoría
+export async function getProductosByCategoria(req, res) {
+  try {
+    const { categoria_id } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const result = await productoService.listProductosByCategoria(categoria_id, page, limit);
+    res.json(result); // Ya incluye ok y data
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+}
+
+
+// producto.controller.js
+export async function getProductosConDescuento(req, res) {
+  try {
+    const productos = await productoService.listProductosConDescuento();
+    return res.status(200).json({ ok: true, data: productos });
+  } catch (error) {
+    console.error("❌ Error al listar productos con descuento:", error);
+    return res.status(500).json({ ok: false, message: "Error interno del servidor" });
+  }
+}
+
+export async function buscarProductos(req, res) {
+  try {
+    const { termino } = req.params;
+    const productos = await productoService.searchProductos(termino);
+    return res.status(200).json({ ok: true, data: productos });
+  } catch (error) {
+    console.error("❌ Error en búsqueda:", error);
+    return res.status(500).json({ ok: false, message: "Error interno del servidor" });
+  }
+}
