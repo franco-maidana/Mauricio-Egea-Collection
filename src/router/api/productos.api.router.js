@@ -12,6 +12,7 @@ productos.post('/create', requireAuthPassport, requireRolePassport('admin'), upl
 // LIST - Solo admin y cliente autenticados
 productos.get('/list',  productoController.getAllProductos);
 productos.get('/list/:id', productoController.getProductoById);
+productos.get("/list-con-promos", productoController.getAllProductosConPromos);
 // LISTAR POR CATEGORÍA - Pública
 productos.get("/categoria/:categoria_id", productoController.getProductosByCategoria);
 

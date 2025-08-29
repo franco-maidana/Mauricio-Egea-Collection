@@ -1,4 +1,6 @@
+import Conexion from "../config/db.js";
 import * as productoService from "../service/producto.service.js";
+import {getPromociones} from '../service/promo.service.js'
 
 // 1. POST /productos
 export const createProducto = async (req, res) => {
@@ -191,3 +193,20 @@ export async function buscarProductos(req, res) {
     return res.status(500).json({ ok: false, message: "Error interno del servidor" });
   }
 }
+
+
+// 📌 Listar productos con promociones de cuotas
+export const getAllProductosConPromos = async (req, res) => {
+  try {
+    const { amount = "1000" } = req.query;  // monto opcional
+    const productos = await productoService.listarProductosConPromos(Number(amount));
+
+    return res.status(200).json({
+      ok: true,
+      data: productos
+    });
+  } catch (error) {
+    console.error("❌ Error al listar productos con promos:", error);
+    return res.status(500).json({ ok: false, message: "Error interno del servidor" });
+  }
+};
