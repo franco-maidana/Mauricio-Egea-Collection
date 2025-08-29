@@ -13,6 +13,8 @@ import mercadoPago from "./mercadoPago.js";
 import ordenes from "./orden.api.router.js";
 import test from "./test.router.js";
 import color from "./color.api.router.js";
+import promociones from "./promo.api.router.js";
+
 
 const apiRouter = Router();
 
@@ -34,6 +36,7 @@ apiRouter.use('/direccion-envio', DireccionEnvio);
 apiRouter.use('/checkout', checkout);
 apiRouter.use('/mercado-pago', mercadoPago);
 apiRouter.use('/ordenes', ordenes);
+apiRouter.use('/promociones', promociones);
 
 // Desarrollo
 if (process.env.NODE_ENV !== 'production') {

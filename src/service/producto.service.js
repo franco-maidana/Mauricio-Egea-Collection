@@ -1,4 +1,23 @@
-import * as productoModel from '../models/producto.model.js';
+import * as productoModel from "../models/producto.model.js";
+import { getPromociones } from "./promo.service.js";
+
+export async function listarProductosConPromos(amount = 1000) {
+  // ✅ getAllProductos devuelve directamente un array
+  const productos = await productoModel.getAllProductos();
+
+  const bins = ["450995", "503175", "371180"];
+
+  // ✅ Adjuntar promos a cada producto
+  return await Promise.all(
+    productos.map(async (prod) => {
+      const promos = await Promise.all(
+        bins.map((bin) => getPromociones(bin, prod.precio_final ?? amount))
+      );
+      return { ...prod, promociones: promos };
+    })
+  );
+}
+
 
 // Listar todos
 export async function listProductos() {
