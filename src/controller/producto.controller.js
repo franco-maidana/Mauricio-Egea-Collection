@@ -157,6 +157,43 @@ export async function quitarDescuentoGlobal(req, res) {
   }
 }
 
+// POST /productos/descuento/categoria/:id
+export async function aplicarDescuentoPorCategoria(req, res) {
+  try {
+    const { porcentaje } = req.body;
+    const { id } = req.params;
+
+    const updated = await productoService.aplicarDescuentoPorCategoria(id, porcentaje);
+
+    return res.status(200).json({
+      ok: true,
+      message: `Descuento del ${porcentaje}% aplicado a ${updated} productos en la categoría ${id}`
+    });
+  } catch (error) {
+    console.error("❌ Error al aplicar descuento por categoría:", error);
+    return res.status(400).json({ ok: false, message: error.message });
+  }
+}
+
+// DELETE /productos/descuento/categoria/:id
+export async function quitarDescuentoPorCategoria(req, res) {
+  try {
+    const { id } = req.params;
+
+    const updated = await productoService.quitarDescuentoPorCategoria(id);
+
+    return res.status(200).json({
+      ok: true,
+      message: `Descuento eliminado de ${updated} productos en la categoría ${id}`
+    });
+  } catch (error) {
+    console.error("❌ Error al quitar descuento por categoría:", error);
+    return res.status(400).json({ ok: false, message: error.message });
+  }
+}
+
+
+
 // 📌 Listar productos por categoría
 export async function getProductosByCategoria(req, res) {
   try {
@@ -196,17 +233,29 @@ export async function buscarProductos(req, res) {
 
 
 // 📌 Listar productos con promociones de cuotas
-export const getAllProductosConPromos = async (req, res) => {
-  try {
-    const { amount = "1000" } = req.query;  // monto opcional
-    const productos = await productoService.listarProductosConPromos(Number(amount));
+// export const getAllProductosConPromos = async (req, res) => {
+//   try {
+//     const { amount = "1000" } = req.query;  // monto opcional
+//     const productos = await productoService.listarProductosConPromos(Number(amount));
 
-    return res.status(200).json({
-      ok: true,
-      data: productos
-    });
-  } catch (error) {
-    console.error("❌ Error al listar productos con promos:", error);
-    return res.status(500).json({ ok: false, message: "Error interno del servidor" });
+//     return res.status(200).json({
+//       ok: true,
+//       data: productos
+//     });
+//   } catch (error) {
+//     console.error("❌ Error al listar productos con promos:", error);
+//     return res.status(500).json({ ok: false, message: "Error interno del servidor" });
+//   }
+// };
+
+// Reordenar productos
+export async function reordenarProductos(req, res) {
+  try {
+    const productos = req.body; // [{ id_producto: 5, orden: 1 }, { id_producto: 7, orden: 2 }]
+    const result = await productoService.reordenarProductos(productos);
+    return res.json(result);
+  } catch (err) {
+    console.error("❌ Error en controller reordenarProductos:", err);
+    return res.status(500).json({ ok: false, message: err.message });
   }
-};
+}

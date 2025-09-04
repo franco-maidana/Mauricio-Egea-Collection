@@ -14,6 +14,7 @@ import ordenes from "./orden.api.router.js";
 import test from "./test.router.js";
 import color from "./color.api.router.js";
 import promociones from "./promo.api.router.js";
+import imagenesGaleria from "./imagenes.api.router.js";
 
 
 const apiRouter = Router();
@@ -29,6 +30,7 @@ apiRouter.use('/talles', talles);
 apiRouter.use('/color', color);
 apiRouter.use('/stock', stock);
 apiRouter.use('/provincias', provincias);
+apiRouter.use('/img-galeria', imagenesGaleria);
 
 // Proceso de compra
 apiRouter.use('/carrito', carrito);

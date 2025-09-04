@@ -1,22 +1,33 @@
-import Conexion from '../config/db.js';
+import Conexion from "../config/db.js";
 
 // Obtener todos los productos
 export const getAllProductos = async () => {
-  const [rows] = await Conexion.query('SELECT * FROM productos');
+  const [rows] = await Conexion.query(
+    "SELECT * FROM productos ORDER BY orden ASC"
+  );
   return rows;
 };
 
 // Obtener productos paginados
 export const getAllProductosPaginated = async (page = 1, limit = 5) => {
   const offset = (page - 1) * limit;
-  const [rows] = await Conexion.query('SELECT * FROM productos LIMIT ? OFFSET ?', [limit, offset]);
-  const [[{ total }]] = await Conexion.query('SELECT COUNT(*) as total FROM productos');
+  const [rows] = await Conexion.query(
+    "SELECT * FROM productos ORDER BY orden ASC LIMIT ? OFFSET ?",
+    [limit, offset]
+  );
+
+  const [[{ total }]] = await Conexion.query(
+    "SELECT COUNT(*) as total FROM productos"
+  );
   return { productos: rows, total };
 };
 
 // Obtener producto por ID
 export const getProductoById = async (id) => {
-  const [rows] = await Conexion.query('SELECT * FROM productos WHERE id_producto = ?', [id]);
+  const [rows] = await Conexion.query(
+    "SELECT * FROM productos WHERE id_producto = ?",
+    [id]
+  );
   return rows[0];
 };
 
@@ -25,12 +36,18 @@ export const createProducto = async (data) => {
   // Calcular precio_final antes de guardar
   const precio_base = Number(data.precio_base);
   const descuento = Number(data.descuento) || 0;
-  const precio_final = +(precio_base - (precio_base * descuento / 100)).toFixed(2);
+  const precio_final = +(precio_base - (precio_base * descuento) / 100).toFixed(
+    2
+  );
+
+  const [[{ maxOrden }]] = await Conexion.query(
+    "SELECT COALESCE(MAX(orden), 0) + 1 as maxOrden FROM productos"
+  );
 
   const [result] = await Conexion.query(
     `INSERT INTO productos
-      (nombre, imagen_url, descripcion, precio_base, descuento, categoria_id, precio_final)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+   (nombre, imagen_url, descripcion, precio_base, descuento, categoria_id, precio_final, orden)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.nombre,
       data.imagen_url || null,
@@ -38,7 +55,8 @@ export const createProducto = async (data) => {
       precio_base,
       descuento,
       data.categoria_id,
-      precio_final
+      precio_final,
+      maxOrden,
     ]
   );
   return result.insertId;
@@ -76,16 +94,23 @@ export const updateProducto = async (id, data) => {
   }
 
   // Solo recalcula precio_final si realmente cambia precio_base o descuento
-  if ((data.precio_base !== undefined && data.precio_base !== "") ||
-      (data.descuento !== undefined && data.descuento !== "")) {
+  if (
+    (data.precio_base !== undefined && data.precio_base !== "") ||
+    (data.descuento !== undefined && data.descuento !== "")
+  ) {
     const productoActual = await getProductoById(id);
-    const precio_base = data.precio_base !== undefined && data.precio_base !== "" 
-      ? Number(data.precio_base) 
-      : Number(productoActual.precio_base);
-    const descuento = data.descuento !== undefined && data.descuento !== ""
-      ? Number(data.descuento)
-      : Number(productoActual.descuento);
-    const precio_final = +(precio_base - (precio_base * descuento / 100)).toFixed(2);
+    const precio_base =
+      data.precio_base !== undefined && data.precio_base !== ""
+        ? Number(data.precio_base)
+        : Number(productoActual.precio_base);
+    const descuento =
+      data.descuento !== undefined && data.descuento !== ""
+        ? Number(data.descuento)
+        : Number(productoActual.descuento);
+    const precio_final = +(
+      precio_base -
+      (precio_base * descuento) / 100
+    ).toFixed(2);
     campos.push("precio_final = ?");
     valores.push(precio_final);
   }
@@ -102,18 +127,25 @@ export const updateProducto = async (id, data) => {
 
 // Borrar producto
 export const deleteProducto = async (id) => {
-  const [result] = await Conexion.query('DELETE FROM productos WHERE id_producto = ?', [id]);
+  const [result] = await Conexion.query(
+    "DELETE FROM productos WHERE id_producto = ?",
+    [id]
+  );
   return result.affectedRows;
 };
 
-export const getProductosByCategoria = async (categoria_id, page = 1, limit = 5) => {
+export const getProductosByCategoria = async (
+  categoria_id,
+  page = 1,
+  limit = 5
+) => {
   const offset = (page - 1) * limit;
   const [rows] = await Conexion.query(
-    'SELECT * FROM productos WHERE categoria_id = ? LIMIT ? OFFSET ?',
+    "SELECT * FROM productos WHERE categoria_id = ? ORDER BY orden ASC LIMIT ? OFFSET ?",
     [categoria_id, limit, offset]
   );
   const [[{ total }]] = await Conexion.query(
-    'SELECT COUNT(*) as total FROM productos WHERE categoria_id = ?',
+    "SELECT COUNT(*) as total FROM productos WHERE categoria_id = ?",
     [categoria_id]
   );
   return { productos: rows, total };
@@ -125,20 +157,20 @@ export const getProductosFiltrados = async ({
   page = 1,
   limit = 5,
   sort = "nombre",
-  order = "asc"
+  order = "asc",
 }) => {
   const offset = (page - 1) * limit;
-  let sql = 'SELECT * FROM productos';
+  let sql = "SELECT * FROM productos";
   let where = [];
   let params = [];
 
   if (categoria_id) {
-    where.push('categoria_id = ?');
+    where.push("categoria_id = ?");
     params.push(categoria_id);
   }
 
   if (where.length > 0) {
-    sql += ' WHERE ' + where.join(' AND ');
+    sql += " WHERE " + where.join(" AND ");
   }
 
   // Solo permitir estos campos para orden
@@ -148,16 +180,16 @@ export const getProductosFiltrados = async ({
   if (!allowedOrder.includes(order)) order = "asc";
 
   sql += ` ORDER BY ${sort} ${order}`;
-  sql += ' LIMIT ? OFFSET ?';
+  sql += " LIMIT ? OFFSET ?";
   params.push(Number(limit), Number(offset));
 
   const [rows] = await Conexion.query(sql, params);
 
   // Total para paginación
-  let countSql = 'SELECT COUNT(*) as total FROM productos';
+  let countSql = "SELECT COUNT(*) as total FROM productos";
   let countParams = [];
   if (where.length > 0) {
-    countSql += ' WHERE ' + where.join(' AND ');
+    countSql += " WHERE " + where.join(" AND ");
     countParams = params.slice(0, where.length);
   }
   const [[{ total }]] = await Conexion.query(countSql, countParams);
@@ -183,7 +215,7 @@ export const existeDescuentoGlobal = async () => {
 
 // Aplicar descuento global (tiene prioridad sobre individuales)
 export const aplicarDescuentoGlobal = async (porcentaje) => {
-  const factor = 1 - (porcentaje / 100);
+  const factor = 1 - porcentaje / 100;
   const [result] = await Conexion.query(
     `UPDATE productos 
      SET descuento_backup = descuento,  -- Guardar descuento actual
@@ -194,7 +226,6 @@ export const aplicarDescuentoGlobal = async (porcentaje) => {
   );
   return result.affectedRows;
 };
-
 
 // Quitar descuento global (volver a los individuales)
 export const quitarDescuentoGlobal = async () => {
@@ -211,6 +242,42 @@ export const quitarDescuentoGlobal = async () => {
   );
   return result.affectedRows;
 };
+
+// Aplicar descuento global por categoría (respetando backup)
+export const aplicarDescuentoPorCategoria = async (categoriaId, porcentaje) => {
+  const factor = 1 - porcentaje / 100;
+  const [result] = await Conexion.query(
+    `UPDATE productos 
+     SET descuento_backup = descuento, 
+         descuento = ?, 
+         descuento_global_activo = 1,
+         precio_final = ROUND(precio_base * ?, 2)
+     WHERE categoria_id = ?`,
+    [porcentaje, factor, categoriaId]
+  );
+  return result.affectedRows;
+};
+
+// Quitar descuento por categoría (restaurar los individuales)
+export const quitarDescuentoPorCategoria = async (categoriaId) => {
+  const [result] = await Conexion.query(
+    `UPDATE productos 
+     SET descuento = descuento_backup,  
+         descuento_backup = 0,
+         descuento_global_activo = 0,
+         precio_final = 
+           CASE 
+             WHEN descuento_backup > 0 THEN ROUND(precio_base - (precio_base * descuento_backup / 100), 2)
+             ELSE precio_base
+           END
+     WHERE categoria_id = ?`,
+    [categoriaId]
+  );
+  return result.affectedRows;
+};
+
+
+
 
 // producto.model.js
 export const getProductosConDescuento = async () => {
@@ -229,3 +296,13 @@ export const searchProductos = async (termino) => {
   );
   return rows;
 };
+
+// Actualizar orden de productos
+export async function updateOrdenProductos(productos) {
+  for (const p of productos) {
+    await Conexion.execute(
+      "UPDATE productos SET orden = ? WHERE id_producto = ?",
+      [p.orden, p.id_producto]
+    );
+  }
+}
