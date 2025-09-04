@@ -12,7 +12,7 @@ productos.post('/create', requireAuthPassport, requireRolePassport('admin'), upl
 // LIST - Solo admin y cliente autenticados
 productos.get('/list',  productoController.getAllProductos);
 productos.get('/list/:id', productoController.getProductoById);
-productos.get("/list-con-promos", productoController.getAllProductosConPromos);
+// productos.get("/list-con-promos", productoController.getAllProductosConPromos);
 // LISTAR POR CATEGORÍA - Pública
 productos.get("/categoria/:categoria_id", productoController.getProductosByCategoria);
 
@@ -34,5 +34,15 @@ productos.post('/descuento/global', requireAuthPassport, requireRolePassport('ad
 
 // Quitar descuento global - Solo admin
 productos.delete('/descuento/quitar', requireAuthPassport, requireRolePassport('admin'), productoController.quitarDescuentoGlobal);
+
+// Descuento por categoría - Solo admin
+productos.post('/descuento/categoria/:id', requireAuthPassport, requireRolePassport('admin'), productoController.aplicarDescuentoPorCategoria);
+
+// Quitar descuento por categoría - Solo admin
+productos.delete('/descuento/categoria/quitar/:id', requireAuthPassport, requireRolePassport('admin'), productoController.quitarDescuentoPorCategoria);
+
+// Reordenar productos - Solo admin
+productos.post("/reordenar", requireAuthPassport, requireRolePassport("admin"), productoController.reordenarProductos );
+
 
 export default productos;

@@ -1,25 +1,26 @@
 import * as productoModel from "../models/producto.model.js";
 import { getPromociones } from "./promo.service.js";
 
-export async function listarProductosConPromos(amount = 1000) {
-  // ✅ getAllProductos devuelve directamente un array
-  const productos = await productoModel.getAllProductos();
+// export async function listarProductosConPromos(amount = 1000) {
+//   // ✅ getAllProductos devuelve directamente un array
+//   const productos = await productoModel.getAllProductos();
 
-  const bins = ["450995", "503175", "371180"];
+//   const bins = ["450995", "503175", "371180"];
 
-  // ✅ Adjuntar promos a cada producto
-  return await Promise.all(
-    productos.map(async (prod) => {
-      const promos = await Promise.all(
-        bins.map((bin) => getPromociones(bin, prod.precio_final ?? amount))
-      );
-      return { ...prod, promociones: promos };
-    })
-  );
-}
+//   // ✅ Adjuntar promos a cada producto
+//   return await Promise.all(
+//     productos.map(async (prod) => {
+//       const promos = await Promise.all(
+//         bins.map((bin) => getPromociones(bin, prod.precio_final ?? amount))
+//       );
+//       return { ...prod, promociones: promos };
+//     })
+//   );
+// }
 
 
 // Listar todos
+
 export async function listProductos() {
   return await productoModel.getAllProductos();
 }
@@ -94,7 +95,6 @@ export async function listProductosByCategoria(categoria_id, page = 1, limit = 5
   };
 }
 
-
 export async function listProductosFiltrados({ categoria_id, page, limit, sort, order }) {
   return await productoModel.getProductosFiltrados({ categoria_id, page, limit, sort, order });
 }
@@ -122,6 +122,21 @@ export async function quitarDescuentoGlobal() {
   return await productoModel.quitarDescuentoGlobal();
 }
 
+// Aplicar descuento por categoría
+export async function aplicarDescuentoPorCategoria(categoriaId, porcentaje) {
+  if (!porcentaje || porcentaje <= 0 || porcentaje > 100) {
+    throw { code: "VALIDATION_ERROR", message: "El porcentaje debe ser mayor a 0 y menor o igual a 100." };
+  }
+
+  return await productoModel.aplicarDescuentoPorCategoria(categoriaId, porcentaje);
+}
+
+// Quitar descuento por categoría
+export async function quitarDescuentoPorCategoria(categoriaId) {
+  return await productoModel.quitarDescuentoPorCategoria(categoriaId);
+}
+
+
 
 // producto.service.js
 export async function listProductosConDescuento() {
@@ -130,4 +145,19 @@ export async function listProductosConDescuento() {
 
 export async function searchProductos(termino) {
   return await productoModel.searchProductos(termino);
+}
+
+
+export async function reordenarProductos(productos) {
+  if (!Array.isArray(productos)) {
+    throw new Error("Formato inválido: se esperaba un array");
+  }
+
+  try {
+    await productoModel.updateOrdenProductos(productos);
+    return { ok: true, message: "Orden actualizado correctamente" };
+  } catch (err) {
+    console.error("❌ Error en service reordenarProductos:", err);
+    throw new Error("Error al actualizar el orden");
+  }
 }
