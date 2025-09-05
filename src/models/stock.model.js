@@ -27,11 +27,10 @@ export const getStockPorProductoYTalle = async (id_producto, talle_id, color_id)
 
 // 3. Crear (o setear) stock para producto+talle (inserta si no existe)
 export const setStock = async (id_producto, talle_id, stock, color_id) => {
-  // UPSERT para (producto + color + talle)
   await Conexion.query(
     `INSERT INTO stock_por_producto_talle (id_producto, color_id, talle_id, stock)
-     VALUES (?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE stock = VALUES(stock)`,
+      VALUES (?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE stock = stock + VALUES(stock)`,
     [id_producto, color_id, talle_id, stock]
   );
   return true;
