@@ -13,6 +13,7 @@ export async function getImagenes(req, res) {
   }
 }
 
+
 // 🔹 Agregar nueva imagen
 export async function addImagen(req, res) {
   try {
@@ -28,17 +29,23 @@ export async function addImagen(req, res) {
     // Guardar en la DB
     const id = await ImagenesService.crearImagen(producto_id, color_id, imagen_url);
 
+    // 👇 devolvemos el objeto completo en "data"
     res.json({
       ok: true,
       msg: "Imagen agregada correctamente",
-      id,
-      url: imagen_url
+      data: {
+        id,
+        producto_id: Number(producto_id),
+        color_id: Number(color_id),
+        imagen_url
+      }
     });
   } catch (error) {
     console.error("❌ Error agregando imagen:", error);
     res.status(500).json({ ok: false, msg: "Error agregando imagen" });
   }
 }
+
 
 
 // 🔹 Eliminar una imagen por ID

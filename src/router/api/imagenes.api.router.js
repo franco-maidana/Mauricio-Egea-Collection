@@ -11,7 +11,7 @@ imagenesGaleria.post("/subir", uploadGaleria.single("imagen"), ImagenesControlle
 imagenesGaleria.get("/:productoId", ImagenesController.getImagenes);
 
 // 🔹 Eliminar una imagen por ID
-imagenesGaleria.delete("/:id", ImagenesController.deleteImagen);
+imagenesGaleria.delete("/destroi/:id", ImagenesController.deleteImagen);
 
 // 🔹 Eliminar todas las imágenes de un producto
 imagenesGaleria.delete("/producto/:productoId", ImagenesController.deleteImagenesPorProducto);
